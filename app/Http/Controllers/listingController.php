@@ -21,7 +21,7 @@ class listingController extends Controller
 {
     /**
      * @OA\Post(
-     *     path="/api/listing/listings",
+     *     path="/api/listing/add-new",
      *     summary="Create a new listing",
      *     description="Create a new listing",
      *     tags={"Listings"},
@@ -32,7 +32,7 @@ class listingController extends Controller
      *             mediaType="multipart/form-data",
      *             @OA\Schema(
      *                 type="object",
-     *                 required={"listing_title", "description", "listing_type","address","state","city","country"},
+     *                 required={"listing_title", "description", "listing_type","address","state","city","country","zip-code"},
      *                 @OA\Property(property="listing_title", type="string", example="Beautiful Apartment"),
      *                 @OA\Property(property="description", type="string", example="A beautiful apartment in the city center."),
      *                 @OA\Property(property="listing_type", type="string", example="Apartment"),
@@ -49,6 +49,7 @@ class listingController extends Controller
      *                 @OA\Property(property="city", type="string", example="RYK"),
      *                 @OA\Property(property="country", type="string", example="Pakistan"),
      *                 @OA\Property(property="area", type="string", example="suny pul"),
+     *                 @OA\Property(property="zip-code", type="integer", example="12345"),
      *             )
      *         )
      *     ),
@@ -88,6 +89,7 @@ class listingController extends Controller
             'description' => $validated['description'],
             'user_id' => Auth::id(),
             'listing_type' => $validated['listing_type'],
+            'status' => 'publish',
             'listing_bedrooms' => $validated['listing_bedrooms'],
             'guests' => $validated['guests'],
             'beds' => $validated['beds'],
@@ -102,7 +104,7 @@ class listingController extends Controller
         $listing->addresses()->create([
             'listing_id'=> $listing->id,
             'address' => $validated['address'],
-            'listing_type'=>'listing',
+            'zip-code'=>$validated['zip-code'],
             'state_id' => $state->id,
             'city_id' => $city->id,
             'country_id' => $country->id,

@@ -10,9 +10,10 @@ class Addresses extends Model
     use HasFactory;
 
     protected $fillable = [
-        'listing_id',
-        'listing_type',
+        'addressable_id',
+        'addressable_type',
         'address',
+        'zip-code',
         'state_id',
         'city_id',
         'country_id',

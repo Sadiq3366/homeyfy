@@ -34,6 +34,7 @@ class listingRequest extends FormRequest
             'listing_size_unit'=>'string',
             'affiliate_booking_link'=>'string',
             'address' => 'required|string|max:255',
+            'zip-code' => 'required|integer|max:10',
             'state' => 'required|string|max:255',
             'city' => 'required|string|max:255',
             'country' => 'required|string|max:255',

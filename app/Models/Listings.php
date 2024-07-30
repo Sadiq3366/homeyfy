@@ -13,6 +13,7 @@ class Listings extends Model
         'listing_title',
         'description',
         'listing_type',
+        'status',
         'user_id',
         'listing_bedrooms',
         'guests',
@@ -25,6 +26,6 @@ class Listings extends Model
     ];
     public function addresses()
     {
-        return $this->hasMany(Addresses::class,'id','listing_id');
+        return $this->morphMany(Addresses::class,'addressable');
     }
 }

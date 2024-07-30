@@ -26,7 +26,7 @@ Route::middleware(['auth:api'])->group(function (){
     Route::post('logout', [AuthController::class,'logout']);
     Route::post('refresh', [AuthController::class,'refresh']);
     Route::group(['prefix'=>'listing'],function (){
-        Route::post('listings', [listingController::class, 'submit']);
+        Route::post('add-new', [listingController::class, 'submit']);
     });
 });
 

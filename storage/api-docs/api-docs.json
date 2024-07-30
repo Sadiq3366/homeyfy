@@ -177,14 +177,14 @@
                 }
             }
         },
-        "/api/listing/listings": {
+        "/api/listing/add-new": {
             "post": {
                 "tags": [
                     "Listings"
                 ],
                 "summary": "Create a new listing",
                 "description": "Create a new listing",
-                "operationId": "3da444d93fc1b6a9515113d13cf06288",
+                "operationId": "d6538364e328dcec94da0de04f820be5",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -197,7 +197,8 @@
                                     "address",
                                     "state",
                                     "city",
-                                    "country"
+                                    "country",
+                                    "zip-code"
                                 ],
                                 "properties": {
                                     "listing_title": {
@@ -263,6 +264,10 @@
                                     "area": {
                                         "type": "string",
                                         "example": "suny pul"
+                                    },
+                                    "zip-code": {
+                                        "type": "integer",
+                                        "example": "12345"
                                     }
                                 },
                                 "type": "object"
