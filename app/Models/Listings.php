@@ -26,6 +26,7 @@ class Listings extends Model
         'listing_size',
         'listing_size_unit',
         'affiliate_booking_link',
+        'virtual_tour'
     ];
     public function addresses()
     {
@@ -34,5 +35,9 @@ class Listings extends Model
     public function listinggallery()
     {
         return $this->morphMany(LisitngGallery::class,'imageable');
+    }
+    public function beds()
+    {
+        return $this->hasMany(Beds::class,'listing_id');
     }
 }

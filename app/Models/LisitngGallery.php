@@ -19,6 +19,10 @@ class LisitngGallery extends Model
     {
         return $this->belongsTo(Listings::class);
     }
+    public function beds()
+    {
+        return $this->belongsTo(Beds::class);
+    }
     public function imageable()
     {
         return $this->morphTo();

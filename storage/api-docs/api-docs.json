@@ -201,7 +201,8 @@
                                     "city",
                                     "country",
                                     "zip-code",
-                                    "images"
+                                    "images",
+                                    "homey_accomodation"
                                 ],
                                 "properties": {
                                     "listing_title": {
@@ -218,7 +219,7 @@
                                     },
                                     "base_price": {
                                         "type": "integer",
-                                        "example": "456"
+                                        "example": 456
                                     },
                                     "price_mode": {
                                         "type": "string",
@@ -282,22 +283,63 @@
                                     },
                                     "zip-code": {
                                         "type": "integer",
-                                        "example": "12345"
+                                        "example": 12345
                                     },
                                     "images": {
+                                        "description": "Array of images for the listing",
                                         "type": "array",
                                         "items": {
+                                            "description": "Image file for the listing",
                                             "type": "string",
                                             "format": "binary"
-                                        },
-                                        "example": [
-                                            "image1.png",
-                                            "image2.jpg"
-                                        ]
+                                        }
                                     },
                                     "video": {
-                                        "type": "text",
+                                        "type": "string",
                                         "example": "www.example.com"
+                                    },
+                                    "virtual_tour": {
+                                        "description": "Enter virtual tour iframe/embedded code",
+                                        "type": "string",
+                                        "example": "<iframe src='...'></iframe>"
+                                    },
+                                    "homey_accomodation": {
+                                        "description": "Array of accommodation objects",
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "acc_bedroom_name": {
+                                                    "description": "Name of the bedroom",
+                                                    "type": "string",
+                                                    "example": "Deluxe Room"
+                                                },
+                                                "acc_guests": {
+                                                    "description": "Number of guests",
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "acc_no_of_beds": {
+                                                    "description": "Number of beds",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "acc_bedroom_type": {
+                                                    "description": "Type of bedroom",
+                                                    "type": "string",
+                                                    "example": "King"
+                                                },
+                                                "acc_bed_images": {
+                                                    "description": "Array of images for the bed",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "description": "Image file of the bed",
+                                                        "type": "string",
+                                                        "format": "binary"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
                                     }
                                 },
                                 "type": "object"

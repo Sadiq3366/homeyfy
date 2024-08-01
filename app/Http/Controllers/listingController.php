@@ -28,38 +28,73 @@ class listingController extends Controller
      *     description="Create a new listing",
      *     tags={"Listings"},
      *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="multipart/form-data",
-     *             @OA\Schema(
-     *                 type="object",
-     *                 required={"listing_title", "description", "listing_type","base_price","price_mode","address","state","city","country","zip-code","images"},
-     *                 @OA\Property(property="listing_title", type="string", example="Beautiful Apartment"),
-     *                 @OA\Property(property="description", type="string", example="A beautiful apartment in the city center."),
-     *                 @OA\Property(property="listing_type", type="string", example="Apartment"),
-     *                 @OA\Property(property="base_price", type="integer", example="456"),
-     *                 @OA\Property(property="price_mode", type="string", example="per night"),
-     *                 @OA\Property(property="is_instance", type="string", example="1"),
-     *                 @OA\Property(property="listing_bedrooms", type="integer", example=2),
-     *                 @OA\Property(property="guests", type="integer", example=4),
-     *                 @OA\Property(property="beds", type="integer", example=2),
-     *                 @OA\Property(property="baths", type="integer", example=1),
-     *                 @OA\Property(property="listing_rooms", type="integer", example=3),
-     *                 @OA\Property(property="listing_size", type="integer", example=1200),
-     *                 @OA\Property(property="listing_size_unit", type="string", example="sqft"),
-     *                 @OA\Property(property="affiliate_booking_link", type="string", example="https://example.com"),
-     *                 @OA\Property(property="address", type="string", example="suny pul RYK"),
-     *                 @OA\Property(property="state", type="string", example="Punjab"),
-     *                 @OA\Property(property="city", type="string", example="RYK"),
-     *                 @OA\Property(property="country", type="string", example="Pakistan"),
-     *                 @OA\Property(property="area", type="string", example="suny pul"),
-     *                 @OA\Property(property="zip-code", type="integer", example="12345"),
-     *                 @OA\Property(property="images", type="array",@OA\Items(type="string",format="binary"), example={"image1.png", "image2.jpg"}),
-     *                 @OA\Property(property="video", type="text", example="www.example.com"),
-     *             )
-     *         )
-     *     ),
+    @OA\RequestBody(
+     *          required=true,
+     *          @OA\MediaType(
+     *              mediaType="multipart/form-data",
+     *              @OA\Schema(
+     *                  type="object",
+     *                  required={
+     *                      "listing_title", "description", "listing_type", "base_price", "price_mode",
+     *                      "address", "state", "city", "country", "zip-code", "images", "homey_accomodation"
+     *                  },
+     *                  @OA\Property(property="listing_title", type="string", example="Beautiful Apartment"),
+     *                  @OA\Property(property="description", type="string", example="A beautiful apartment in the city center."),
+     *                  @OA\Property(property="listing_type", type="string", example="Apartment"),
+     *                  @OA\Property(property="base_price", type="integer", example=456),
+     *                  @OA\Property(property="price_mode", type="string", example="per night"),
+     *                  @OA\Property(property="is_instance", type="string", example="1"),
+     *                  @OA\Property(property="listing_bedrooms", type="integer", example=2),
+     *                  @OA\Property(property="guests", type="integer", example=4),
+     *                  @OA\Property(property="beds", type="integer", example=2),
+     *                  @OA\Property(property="baths", type="integer", example=1),
+     *                  @OA\Property(property="listing_rooms", type="integer", example=3),
+     *                  @OA\Property(property="listing_size", type="integer", example=1200),
+     *                  @OA\Property(property="listing_size_unit", type="string", example="sqft"),
+     *                  @OA\Property(property="affiliate_booking_link", type="string", example="https://example.com"),
+     *                  @OA\Property(property="address", type="string", example="suny pul RYK"),
+     *                  @OA\Property(property="state", type="string", example="Punjab"),
+     *                  @OA\Property(property="city", type="string", example="RYK"),
+     *                  @OA\Property(property="country", type="string", example="Pakistan"),
+     *                  @OA\Property(property="area", type="string", example="suny pul"),
+     *                  @OA\Property(property="zip-code", type="integer", example=12345),
+     *                  @OA\Property(
+     *                      property="images",
+     *                      type="array",
+     *                      @OA\Items(
+     *                          type="string",
+     *                          format="binary",
+     *                          description="Image file for the listing"
+     *                      ),
+     *                      description="Array of images for the listing"
+     *                  ),
+     *                  @OA\Property(property="video", type="string", example="www.example.com"),
+     *                  @OA\Property(property="virtual_tour", type="string", description="Enter virtual tour iframe/embedded code", example="<iframe src='...'></iframe>"),
+     *                  @OA\Property(
+     *                      property="homeyfy_accomodation",
+     *                      type="array",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          @OA\Property(property="acc_bedroom_name", type="string", description="Name of the bedroom", example="Deluxe Room"),
+     *                          @OA\Property(property="acc_guests", type="integer", description="Number of guests", example=2),
+     *                          @OA\Property(property="acc_no_of_beds", type="integer", description="Number of beds", example=1),
+     *                          @OA\Property(property="acc_bedroom_type", type="string", description="Type of bedroom", example="King"),
+     *                          @OA\Property(
+     *                              property="acc_bed_images",
+     *                              type="array",
+     *                              @OA\Items(
+     *                                  type="string",
+     *                                  format="binary",
+     *                                  description="Image file of the bed"
+     *                              ),
+     *                              description="Array of images for the bed"
+     *                          )
+     *                      ),
+     *                      description="Array of accommodation objects"
+     *                  )
+     *              )
+     *          )
+     *      ),
      *     @OA\Response(
      *         response=200,
      *         description="Listing saved successfully"
@@ -109,6 +144,7 @@ class listingController extends Controller
             'listing_size' => $validated['listing_size'],
             'listing_size_unit' => $validated['listing_size_unit'],
             'affiliate_booking_link' => $validated['affiliate_booking_link'],
+            'virtual_tour' => $validated['virtual_tour'],
         ]);
 
         // Create the Address record
@@ -139,7 +175,43 @@ class listingController extends Controller
 
         ]);
 
-        return response()->json(['message' => 'Listing,address and images stored successfully'], 201);
+        $accommodations = $request->input('homeyfy_accomodation');
+        $bedroomNames = $guests = $acc_no_of_beds = $acc_bedroom_type =[];
+        $bedImages = [];
+        if($accommodations){
+            foreach ($accommodations as $index =>$accommodation) {
+                $uploadedImages = [];
+                $bedroomNames[] = $accommodation['acc_bedroom_name'];
+                $guests[] = $accommodation['acc_guests'];
+                $acc_no_of_beds[] = $accommodation['acc_no_of_beds'];
+                $acc_bedroom_type[] = $accommodation['acc_bedroom_type'];
+                if ($request->hasFile("homeyfy_accomodation.$index.acc_bed_images")) {
+                    foreach ($request->file("homeyfy_accomodation.$index.acc_bed_images") as $file) {
+                        $file_name = time().rand(99,9999).'.'.$file->getClientOriginalName();
+                        $path = Storage::putFileAs('public/images',$file,$file_name);
+                        $uploadedImages[]= $path;
+                    }
+                }
+                $bedImages[]=$uploadedImages;
+            }
+
+            $bed = $listing->beds()->create([
+                'listing_id' => $listing->id,
+                'name' => json_encode($bedroomNames), // Convert array to JSON
+                'guests' => json_encode($guests), // Convert array to JSON
+                'beds' => json_encode($acc_no_of_beds), // Convert array to JSON
+                'type' => json_encode($acc_bedroom_type), // Convert array to JSON
+            ]);
+
+            $imagesJson = json_encode($bedImages);
+
+            $bed->bedgallery()->create([
+                'image_path' => $imagesJson,
+            ]);
+        }
+
+
+        return response()->json(['message' => 'Listing,address,images and beds stored successfully'], 201);
 
     }
 }

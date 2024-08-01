@@ -44,7 +44,13 @@ class listingRequest extends FormRequest
             'area' => 'required|string|max:255',
             'images' => 'required',
             'images.*' => 'file|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'video' => 'url'
+            'video' => 'url',
+            'virtual_tour'=> 'string',
+            'homeyfy_accomodation.*.acc_bedroom_name' => 'string|max:255',
+            'homeyfy_accomodation.*.acc_guests' => 'integer|min:1',
+            'homeyfy_accomodation.*.acc_no_of_beds' => 'integer|min:1',
+            'homeyfy_accomodation.*.acc_bedroom_type' => 'string|max:255',
+            'homey_accomodation.*.acc_bed_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ];
     }
 }
