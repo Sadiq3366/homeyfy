@@ -13,6 +13,9 @@ class Listings extends Model
         'listing_title',
         'description',
         'listing_type',
+        'base_price',
+        'price_mode',
+        'is_instance',
         'status',
         'user_id',
         'listing_bedrooms',
@@ -27,5 +30,9 @@ class Listings extends Model
     public function addresses()
     {
         return $this->morphMany(Addresses::class,'addressable');
+    }
+    public function listinggallery()
+    {
+        return $this->morphMany(LisitngGallery::class,'imageable');
     }
 }

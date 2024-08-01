@@ -33,12 +33,18 @@ class listingRequest extends FormRequest
             'listing_size'=>'string',
             'listing_size_unit'=>'string',
             'affiliate_booking_link'=>'string',
+            'base_price'=>'integer|required',
+            'price_mode'=>'string|required',
+            'is_instance'=>'boolean',
             'address' => 'required|string|max:255',
-            'zip-code' => 'required|integer|max:10',
+            'zip-code' => ['required', 'integer', 'digits_between:3,100'],
             'state' => 'required|string|max:255',
             'city' => 'required|string|max:255',
             'country' => 'required|string|max:255',
             'area' => 'required|string|max:255',
+            'images' => 'required',
+            'images.*' => 'file|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'video' => 'url'
         ];
     }
 }

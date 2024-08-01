@@ -194,11 +194,14 @@
                                     "listing_title",
                                     "description",
                                     "listing_type",
+                                    "base_price",
+                                    "price_mode",
                                     "address",
                                     "state",
                                     "city",
                                     "country",
-                                    "zip-code"
+                                    "zip-code",
+                                    "images"
                                 ],
                                 "properties": {
                                     "listing_title": {
@@ -212,6 +215,18 @@
                                     "listing_type": {
                                         "type": "string",
                                         "example": "Apartment"
+                                    },
+                                    "base_price": {
+                                        "type": "integer",
+                                        "example": "456"
+                                    },
+                                    "price_mode": {
+                                        "type": "string",
+                                        "example": "per night"
+                                    },
+                                    "is_instance": {
+                                        "type": "string",
+                                        "example": "1"
                                     },
                                     "listing_bedrooms": {
                                         "type": "integer",
@@ -268,6 +283,21 @@
                                     "zip-code": {
                                         "type": "integer",
                                         "example": "12345"
+                                    },
+                                    "images": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        },
+                                        "example": [
+                                            "image1.png",
+                                            "image2.jpg"
+                                        ]
+                                    },
+                                    "video": {
+                                        "type": "text",
+                                        "example": "www.example.com"
                                     }
                                 },
                                 "type": "object"

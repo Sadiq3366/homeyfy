@@ -9,6 +9,8 @@ use App\Models\Country;
 use App\Models\Listings;
 use App\Models\State;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+
 /**
 * @OA\SecurityScheme(
  *     securityScheme="bearerAuth",
@@ -32,10 +34,13 @@ class listingController extends Controller
      *             mediaType="multipart/form-data",
      *             @OA\Schema(
      *                 type="object",
-     *                 required={"listing_title", "description", "listing_type","address","state","city","country","zip-code"},
+     *                 required={"listing_title", "description", "listing_type","base_price","price_mode","address","state","city","country","zip-code","images"},
      *                 @OA\Property(property="listing_title", type="string", example="Beautiful Apartment"),
      *                 @OA\Property(property="description", type="string", example="A beautiful apartment in the city center."),
      *                 @OA\Property(property="listing_type", type="string", example="Apartment"),
+     *                 @OA\Property(property="base_price", type="integer", example="456"),
+     *                 @OA\Property(property="price_mode", type="string", example="per night"),
+     *                 @OA\Property(property="is_instance", type="string", example="1"),
      *                 @OA\Property(property="listing_bedrooms", type="integer", example=2),
      *                 @OA\Property(property="guests", type="integer", example=4),
      *                 @OA\Property(property="beds", type="integer", example=2),
@@ -50,6 +55,8 @@ class listingController extends Controller
      *                 @OA\Property(property="country", type="string", example="Pakistan"),
      *                 @OA\Property(property="area", type="string", example="suny pul"),
      *                 @OA\Property(property="zip-code", type="integer", example="12345"),
+     *                 @OA\Property(property="images", type="array",@OA\Items(type="string",format="binary"), example={"image1.png", "image2.jpg"}),
+     *                 @OA\Property(property="video", type="text", example="www.example.com"),
      *             )
      *         )
      *     ),
@@ -70,6 +77,7 @@ class listingController extends Controller
 
     public function submit(listingRequest $request)
     {
+
         $validated = $request->validated();
 
         $state = State::firstOrCreate(['name' => $validated['state']]);
@@ -89,6 +97,9 @@ class listingController extends Controller
             'description' => $validated['description'],
             'user_id' => Auth::id(),
             'listing_type' => $validated['listing_type'],
+            'base_price' => $validated['base_price'],
+            'price_mode' => $validated['price_mode'],
+            'is_instance' => $validated['is_instance'],
             'status' => 'publish',
             'listing_bedrooms' => $validated['listing_bedrooms'],
             'guests' => $validated['guests'],
@@ -102,7 +113,6 @@ class listingController extends Controller
 
         // Create the Address record
         $listing->addresses()->create([
-            'listing_id'=> $listing->id,
             'address' => $validated['address'],
             'zip-code'=>$validated['zip-code'],
             'state_id' => $state->id,
@@ -111,7 +121,25 @@ class listingController extends Controller
             'area_id' => $area->id,
         ]);
 
-        return response()->json(['message' => 'Listing and address stored successfully'], 201);
+        $images = [];
+
+        if($request->hasFile('images')){
+            foreach ($request->file('images') as $image){
+
+                $image_name = time().rand(99,9999).'.'.$image->getClientOriginalName();
+                $image_path = Storage::putFileAs('public/images',$image,$image_name);
+                $images []= $image_path;
+            }
+        }
+
+        $imagesJson = json_encode($images);
+        $listing->listinggallery()->create([
+            'image_path' => $imagesJson,
+            'video_path'=>$validated['video'],
+
+        ]);
+
+        return response()->json(['message' => 'Listing,address and images stored successfully'], 201);
 
     }
 }
