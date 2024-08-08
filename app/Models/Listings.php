@@ -20,7 +20,7 @@ class Listings extends Model
         'user_id',
         'listing_bedrooms',
         'guests',
-        'beds',
+        'l_beds',
         'baths',
         'listing_rooms',
         'listing_size',
@@ -39,5 +39,21 @@ class Listings extends Model
     public function beds()
     {
         return $this->hasMany(Beds::class,'listing_id');
+    }
+    public function extra()
+    {
+        return $this->hasMany(Extra::class,'listing_id');
+    }
+    public function services()
+    {
+        return $this->hasMany(Services::class,'listing_id');
+    }
+    public function feature()
+    {
+        return $this->hasMany(Feature::class,'listing_id');
+    }
+    public function terms()
+    {
+        return $this->hasMany(Term::class,'listing_id');
     }
 }

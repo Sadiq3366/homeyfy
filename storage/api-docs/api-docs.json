@@ -201,8 +201,7 @@
                                     "city",
                                     "country",
                                     "zip-code",
-                                    "images",
-                                    "homey_accomodation"
+                                    "images"
                                 ],
                                 "properties": {
                                     "listing_title": {
@@ -303,43 +302,64 @@
                                         "type": "string",
                                         "example": "<iframe src='...'></iframe>"
                                     },
-                                    "homey_accomodation": {
-                                        "description": "Array of accommodation objects",
+                                    "homeyfy_accomodation[0][acc_bedroom_name]": {
+                                        "description": "Name of the bedroom",
+                                        "type": "string",
+                                        "example": "Deluxe Room"
+                                    },
+                                    "homeyfy_accomodation[0][acc_guests]": {
+                                        "description": "Number of guests",
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "homeyfy_accomodation[0][acc_no_of_beds]": {
+                                        "description": "Number of beds",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "homeyfy_accomodation[0][acc_bedroom_type]": {
+                                        "description": "Type of bedroom",
+                                        "type": "string",
+                                        "example": "King"
+                                    },
+                                    "acc_bed_images": {
+                                        "description": "Array of images for the bed",
                                         "type": "array",
                                         "items": {
-                                            "properties": {
-                                                "acc_bedroom_name": {
-                                                    "description": "Name of the bedroom",
-                                                    "type": "string",
-                                                    "example": "Deluxe Room"
-                                                },
-                                                "acc_guests": {
-                                                    "description": "Number of guests",
-                                                    "type": "integer",
-                                                    "example": 2
-                                                },
-                                                "acc_no_of_beds": {
-                                                    "description": "Number of beds",
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "acc_bedroom_type": {
-                                                    "description": "Type of bedroom",
-                                                    "type": "string",
-                                                    "example": "King"
-                                                },
-                                                "acc_bed_images": {
-                                                    "description": "Array of images for the bed",
-                                                    "type": "array",
-                                                    "items": {
-                                                        "description": "Image file of the bed",
-                                                        "type": "string",
-                                                        "format": "binary"
-                                                    }
-                                                }
-                                            },
-                                            "type": "object"
+                                            "description": "Image file of the bed",
+                                            "type": "string",
+                                            "format": "binary"
                                         }
+                                    },
+                                    "homeyfy_extra[0][name]": {
+                                        "description": "Name of price",
+                                        "type": "string",
+                                        "example": "my price"
+                                    },
+                                    "homeyfy_extra[0][price]": {
+                                        "description": "Total price",
+                                        "type": "integer",
+                                        "example": 434
+                                    },
+                                    "homeyfy_extra[0][type]": {
+                                        "description": "type of price",
+                                        "type": "string",
+                                        "example": "insany"
+                                    },
+                                    "homeyfy_service[0][name]": {
+                                        "description": "Name of price",
+                                        "type": "string",
+                                        "example": "my price"
+                                    },
+                                    "homeyfy_service[0][price]": {
+                                        "description": "Total price",
+                                        "type": "integer",
+                                        "example": 434
+                                    },
+                                    "homeyfy_service[0][bed]": {
+                                        "description": "no of beds",
+                                        "type": "string",
+                                        "example": 3
                                     }
                                 },
                                 "type": "object"

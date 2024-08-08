@@ -13,7 +13,7 @@ class Addresses extends Model
         'addressable_id',
         'addressable_type',
         'address',
-        'zip-code',
+        'zip_code',
         'state_id',
         'city_id',
         'country_id',

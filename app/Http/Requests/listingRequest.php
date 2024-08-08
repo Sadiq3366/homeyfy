@@ -27,7 +27,7 @@ class listingRequest extends FormRequest
             'listing_type'=>'required|string',
             'listing_bedrooms'=>'integer',
             'guests'=>'integer',
-            'beds' => 'integer',
+            'l_beds' => 'integer',
             'baths'=>'integer',
             'listing_rooms'=>'integer',
             'listing_size'=>'string',
@@ -37,7 +37,7 @@ class listingRequest extends FormRequest
             'price_mode'=>'string|required',
             'is_instance'=>'boolean',
             'address' => 'required|string|max:255',
-            'zip-code' => ['required', 'integer', 'digits_between:3,100'],
+            'zip_code' => ['required', 'integer', 'digits_between:3,100'],
             'state' => 'required|string|max:255',
             'city' => 'required|string|max:255',
             'country' => 'required|string|max:255',
@@ -50,7 +50,14 @@ class listingRequest extends FormRequest
             'homeyfy_accomodation.*.acc_guests' => 'integer|min:1',
             'homeyfy_accomodation.*.acc_no_of_beds' => 'integer|min:1',
             'homeyfy_accomodation.*.acc_bedroom_type' => 'string|max:255',
-            'homey_accomodation.*.acc_bed_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'homeyfy_accomodation.*.acc_bed_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'homeyfy_extra.*.name' => 'string|max:255',
+            'homeyfy_extra.*.price' => 'integer|min:1',
+            'homeyfy_extra.*.type' => 'string',
+            'homeyfy_services.*.name' => 'string|max:255',
+            'homeyfy_services.*.price' => 'integer|min:1',
+            'homeyfy_services.*.bed' => 'integer',
+
         ];
     }
 }
