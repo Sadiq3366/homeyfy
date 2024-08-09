@@ -31,6 +31,8 @@ Route::middleware(['auth:api'])->group(function (){
     Route::group(['prefix'=>'listing'],function (){
         Route::post('add-new', [listingController::class, 'submit']);
         Route::get('view-listing', [listingController::class, 'view']);
+        Route::post('update-listing', [listingController::class, 'update']);
+        Route::get('delete-listing', [listingController::class, 'delete']);
     });
 });
 

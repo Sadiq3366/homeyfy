@@ -5,10 +5,12 @@ namespace App\Models;
 use Faker\Provider\Address;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Listings extends Model
 {
     use HasFactory;
+    use SoftDeletes;
     protected $fillable = [
         'listing_title',
         'description',
