@@ -1,0 +1,137 @@
+.login-register-title{
+    position: relative;
+    top: 50%;
+    -webkit-transform: translateY(-50%);
+    -ms-transform: translateY(-50%);
+    font-size: 25px;
+    line-height: 40px;
+    font-weight: 300;
+    padding: 0 30px;
+    color: #fff;
+}
+.register_logo{
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    background-color:#7f7f7f ;
+}
+.form-design{
+    border: 1px ridge;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px
+}
+.btn-full-width {
+    padding-left: 0;
+    padding-right: 0;
+    margin-bottom: 10px;
+    width: 100%;
+}
+button.btn.social_btn {
+    border: 2px ridge;
+    width: 38%;
+    margin: 7px;
+}
+
+.logged-in-nav.show {
+    visibility: visible;
+    opacity: 1;
+    top: 114%;
+    border-radius: unset;
+}
+.logged-in-nav {
+    text-align: left;
+}
+.logged-in-nav {
+    left: -145px;
+    min-width: 200px;
+    opacity: 0;
+    top: 110%;
+}
+.dropdown-menu {
+    border-color: #dce0e0;
+}
+.navbar-logged-in-wrap:after{
+    content: none;
+}
+.alert-danger , .alert-success{
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px, rgba(10, 37, 64, 0.35) 0px -2px 6px 0px inset;
+}
+
+/*slider construction*/
+
+.slider-container {
+    width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+
+}
+
+.slide img {
+    width: 100%;
+    height: 550px;
+    transition: transform 2.5s ease;
+}
+
+.slide {
+    cursor: pointer; /* Indicate that the image is clickable */
+    transition: transform 0.5s ease; /* Smooth transition for zoom effect */
+}
+
+.slide img:hover {
+    transform: scale(1.1); /* Zoom effect on hover */
+}
+
+/* Slick arrows */
+.slick-prev,
+.slick-next {
+    width: 30px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.slider-container .slick-prev {
+    left: 30px;
+}
+
+.slider-container .slick-next {
+    right: 30px;
+}
+
+.slick-prev::before,
+.slick-next::before {
+    font-size: 24px;
+    color: white;
+}
+
+.slick-prev::before {
+    content: '←'; /* Or use your preferred icon */
+}
+
+.slick-next::before {
+    content: '→'; /* Or use your preferred icon */
+}
+
+/* Customize slick dots */
+.slick-dots li button:before {
+    color: #007bff;
+}
+
+.slick-dots li.slick-active button:before {
+    color: #007bff;
+}
+.slider_subject {
+    text-align: center;
+    padding: 10px;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    color: #fff;
+    display: grid;
+}
+.slider_subject strong{
+    font-size: xx-large;
+    font-weight: 500;
+}
