@@ -9,6 +9,7 @@ export const AuthProvider = ({children}) =>{
 
     const checkAuthStatus = async () => {
         const token = localStorage.getItem('authToken');
+
         if(token){
             try {
                 const response = await http.get('check_user/', {

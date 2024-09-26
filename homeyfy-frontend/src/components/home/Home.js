@@ -1,5 +1,6 @@
 import React, {useState} from "react";
 import Slider from "react-slick";
+import MainSearch from "../search/MianSearch";
 
 const images = [
     {
@@ -33,10 +34,6 @@ const images = [
     {
         image: 'https://visengine.com/wp-content/uploads/2021/02/FullSizeRender-5-min1-1024x683.jpg',
         text: 'Buy and Sell Amazing Places',
-        bottomText:'EQUESTRIAL/HISTORIC/WATERFRRONT',    },
-    {
-        image: 'https://wallpapers.com/images/hd/real-estate-pictures-vcmjq8hbwymed2n7.jpg',
-        text: 'Explore Unique Life Style.',
         bottomText:'EQUESTRIAL/HISTORIC/WATERFRRONT',    },
     {
         image: 'https://preview.redd.it/youre-a-successful-real-estate-agent-and-a-father-of-3-what-v0-jmecmjkuvrfc1.jpg?width=640&crop=smart&auto=webp&s=4f80fa1125ecf16238db1101b6ff45ce33f07b2b',
@@ -88,7 +85,7 @@ const Home = ()=> {
                     <span>{images[currentSlide].bottomText}</span>
                 </div>
             </div>
-
+            <MainSearch />
         </>
     );
 

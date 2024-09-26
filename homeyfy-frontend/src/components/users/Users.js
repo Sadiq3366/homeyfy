@@ -2,14 +2,19 @@ import React, {useEffect, useState} from "react";
 import http from "../../http";
 import {Link, useNavigate} from "react-router-dom";
 import {useAuth} from "../../context/AuthContext";
-const Users = ()=>{
+import SideBar from "../../admin-panel/SideBar";
+const Users = (props)=>{
     const [users, setUsers] = useState([]);
-    const {loginUserType, loginUserId, functionAction}= useAuth();
-    const navigate =useNavigate();
+    const {loginUserType, loginUserId, checkAuthStatus}= useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
-        fetchAllUsers();
-    }, []);
+        if(loginUserType === 'admin'){
+            fetchAllUsers();
+        } else {
+            navigate('/');
+        }
+    }, [loginUserType]);
     const fetchAllUsers = ()=> {
         http.get('/auth/users').then(res=>{
             setUsers(res.data);
@@ -22,43 +27,51 @@ const Users = ()=>{
     }
     return(
         <>
+
             {loginUserType && loginUserId ? (
-                <div className="container">
-                    <table className="table">
-                        <thead>
-                        <tr>
-                            <th scope="col">ID</th>
-                            <th scope="col">First Name</th>
-                            <th scope="col">Last Name</th>
-                            <th scope="col">User Name</th>
-                            <th scope="col">Mobile</th>
-                            <th scope="col">Email</th>
-                            <th scope="col">User Type</th>
-                            <th scope="col">Action</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {users.map((user, index) => (
-                            <tr key={user.id}>
-                                <th scope="row">{user.id}</th>
-                                <th scope="row">{user.first_name}</th>
-                                <td>{user.last_name}</td>
-                                <td>{user.user_name}</td>
-                                <td>{user.phone}</td>
-                                <td>{user.email}</td>
-                                <td>{user.user_type}</td>
-                                <td>
-                                    <Link className="btn btn-info" to='/profile/'>Edit</Link>
-                                    <button type="button" className="btn btn-danger" onClick={() => {
-                                        deleteUser(user.id)
-                                    }}>Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
+                <>
+                    <SideBar active={props.active} loginUserType={loginUserType} loginUserId={loginUserId} checkAuthStatus={checkAuthStatus} />
+                    <div className="user_content_title">
+                        <div className="container">
+                            Users
+                        </div>
+
+                    </div>
+                    <div className="user_dashboard_wrap">
+                        <div className="col-md-12 col-lg-12 col-sm-12">
+                            <div className="container">
+                                <table className="table">
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">User Name</th>
+                                        <th scope="col">Mobile</th>
+                                        <th scope="col">Email</th>
+                                        <th scope="col">User Type</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {users.map((user, index) => (
+                                        <tr key={user.id}>
+                                            <td>{user.user_name}</td>
+                                            <td>{user.phone}</td>
+                                            <td>{user.email}</td>
+                                            <td>{user.user_type}</td>
+                                            <td>
+                                                <Link className="btn btn-info" to='/profile/'>Edit</Link>
+                                                <button type="button" className="btn btn-danger" onClick={() => {
+                                                    deleteUser(user.id)
+                                                }}>Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </>
             ):(
                 navigate('/')
             )}

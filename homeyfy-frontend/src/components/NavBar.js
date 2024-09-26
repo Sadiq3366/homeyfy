@@ -28,7 +28,6 @@ const NavBar = (props) =>{
             if (response.status === 200) {
                 localStorage.removeItem('authToken');
                 await checkAuthStatus();
-                // navigate('/users');
             } else {
                 console.error('Logout failed:', response.statusText);
             }
@@ -77,21 +76,52 @@ const NavBar = (props) =>{
                                </button>
                                {isOpen && (
                                    <ul className="logged-in-nav dropdown-menu show">
-                                       <li><Link className="dropdown-item" to="#" onClick={handleClose}>Action</Link>
+                                       <li><Link className="dropdown-item" to="#" onClick={handleClose}>Board<i
+                                           className="fa fa-dashboard mx-2 homeyfy_icon"></i></Link>
                                        </li>
-                                       <li><Link className="dropdown-item" to="#" onClick={handleClose}>Another
-                                           action</Link></li>
-                                       <li><Link className="dropdown-item" to='#' onClick={()=>{
+                                       <li><Link className="dropdown-item" to="#" onClick={handleClose}>Insight<i
+                                           className="fa fa-layer-group mx-2 homeyfy_icon"></i></Link>
+                                       </li>
+                                       <li><Link className="dropdown-item" to="/my-listings/" onClick={handleClose}>Listings<i
+                                           className="fa fa-building mx-2 homeyfy_icon"></i></Link>
+                                       </li>
+                                       <li><Link className="dropdown-item" to="#" onClick={handleClose}>Create
+                                           Listing <i
+                                               className="fa fa-plus mx-2 homeyfy_icon"></i></Link>
+                                       </li>
+                                       <li><Link className="dropdown-item" to="#" onClick={handleClose}>Bookings<i
+                                           className="fa fa-book-open mx-2 homeyfy_icon"></i></Link>
+                                       </li>
+                                       <li><Link className="dropdown-item" to="#" onClick={handleClose}>Reservations<i
+                                           className="fa fa-book mx-2 homeyfy_icon"></i></Link>
+                                       </li>
+                                       {loginUserType==='admin' &&(
+                                       <li><Link className="dropdown-item" to="/users" onClick={handleClose}>Users<i
+                                           className="fa fa-user mx-2 homeyfy_icon"></i></Link>
+                                       </li>
+                                       )}
+                                       <li><Link className="dropdown-item" to="#" onClick={handleClose}>Favorites<i
+                                           className="fa fa-heart-o mx-2 homeyfy_icon"></i></Link>
+                                       </li>
+                                       <li><Link className="dropdown-item" to="#" onClick={handleClose}>Saved
+                                           Search<i
+                                               className="fa fa-search mx-2 homeyfy_icon"></i></Link>
+                                       </li>
+                                       <li><Link className="dropdown-item" to="#" onClick={handleClose}>Invoices<i
+                                           className="fa fa-dollar mx-2 homeyfy_icon"></i></Link>
+                                       </li>
+                                       <li><Link className="dropdown-item" to='#' onClick={() => {
                                            handleClose();
                                            logoutHandel();
-                                       }}>LogOut</Link></li>
+                                       }}>LogOut<i
+                                           className="fa fa-lock mx-2 homeyfy_icon"></i></Link></li>
                                    </ul>
                                )}
                            </div>
                        ) : (
                            <div className="d-flex">
                                <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-                                   <li className="nav-item">
+                               <li className="nav-item">
                                        <Link className="nav-link" aria-current="page" to="/login">Login</Link>
                                    </li>
                                    <li className="nav-item">

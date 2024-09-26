@@ -7,6 +7,7 @@ use App\Models\Addresses;
 use App\Models\Area;
 use App\Models\City;
 use App\Models\Country;
+use App\Models\Favorite;
 use App\Models\Listings;
 use App\Models\State;
 use App\Models\User;
@@ -124,6 +125,23 @@ class listingController extends Controller
         // Create or retrieve the area
         $area = Area::firstOrCreate(['name' => $validated['area'], 'city_id' => $city->id]);
 
+        $address='';
+
+        if($validated['address']){
+            $address = $validated['address'];
+        }
+        if($validated['area']){
+            $address.= ','.$validated['area'];
+        }
+        if($validated['state']){
+            $address.= ','.$validated['state'];
+        }
+        if($validated['city']){
+            $address.= ','.$validated['city'];
+        }
+        if($validated['country']){
+            $address.= ','.$validated['country'];
+        }
         // Create the Listing record
         $listing = Listings::create([
             'listing_title' => $validated['listing_title'],
@@ -147,7 +165,7 @@ class listingController extends Controller
 
         // Create the Address record
         $listing->addresses()->create([
-            'address' => $validated['address'],
+            'address' => $address,
             'zip_code'=>$validated['zip_code'],
             'state_id' => $state->id,
             'city_id' => $city->id,
@@ -159,10 +177,10 @@ class listingController extends Controller
 
         if($request->hasFile('images')){
             foreach ($request->file('images') as $image){
-
-                $image_name = time().rand(99,9999).'.'.$image->getClientOriginalName();
-                $image_path = Storage::putFileAs('public/images',$image,$image_name);
-                $images []= $image_path;
+                $name = time().rand(99,9999).'.'.$image->getClientOriginalName();
+                $path = $image->storeAs('public/images', $name);
+                $url = Storage::url($path);
+                $images[] = $url;
             }
         }
 
@@ -186,8 +204,9 @@ class listingController extends Controller
                 if ($request->hasFile("homeyfy_accomodation.$index.acc_bed_images")) {
                     foreach ($request->file("homeyfy_accomodation.$index.acc_bed_images") as $file) {
                         $file_name = time().rand(99,9999).'.'.$file->getClientOriginalName();
-                        $path = Storage::putFileAs('public/images',$file,$file_name);
-                        $uploadedImages[]= $path;
+                        $path = $file->storeAs('public/images', $file_name);
+                        $url = Storage::url($path);
+                        $uploadedImages[]= $url;
                     }
                 }
                 $bedImages[]=$uploadedImages;
@@ -270,12 +289,14 @@ class listingController extends Controller
         return response()->json(['message' => 'Listing,address,images and beds stored successfully'], 201);
 
     }
-    public function view(Request $request )
+    public function dashboard_view(Request $request )
     {
 
-        $id = Auth::id();
-        $user = Auth::user();
-        $user_type = $user->user_type;
+        $id = $request->input('user_id');
+        $user_type = $request->input('user_type');
+        $page = $request->input('page');
+        $pagesize = $request->input('pagesize');
+        $user_record=[];
         $listings = Listings::with([
             'addresses.country',
             'addresses.state',
@@ -305,7 +326,7 @@ class listingController extends Controller
             });
         }
 
-        $listings = $listings->get();
+        $listings = $listings->paginate($pagesize, ['*'], 'page', $page);
         $listings_data=[];
 
         foreach ($listings as $listing) {
@@ -327,6 +348,7 @@ class listingController extends Controller
             $listings_data ['affiliate_booking_link'] = $listing->affiliate_booking_link;
             $listings_data ['virtual_tour'] = $listing->virtual_tour;
             $listings_data ['listing_rooms'] = $listing->listing_rooms;
+            $listings_data ['updated_date'] =$listing->updated_at;
 
             // Access addresses
             if($listing->addresses->isNotEmpty()){
@@ -350,7 +372,7 @@ class listingController extends Controller
             if($listing->beds->isNotEmpty()){
                 foreach ($listing->beds as $bed) {
                     $listings_data ['name'] = $bed->name;
-                    $listings_data ['guests'] = $bed->guests;
+                    $listings_data ['room_guests'] = $bed->guests;
                     $listings_data ['beds'] = $bed->beds;
                     $listings_data ['type'] = $bed->type;
                 }
@@ -403,12 +425,69 @@ class listingController extends Controller
                     $listings_data ['additional_rules'] = $term->additional_rules;
                 }
             }
-            print_r($listings_data);
+            $user_record[] = $listings_data;
         }
+        $listings_paginate['total'] = $listings->total(); // Total number of items
+
+        return response()->json(['listings'=>$user_record,'pagination'=>$listings_paginate]);
+
+    }
+    public function edit(Request $request )
+    {
+
+        $user = Auth::user();
+        $listing_id =$request->input('listing_id');
+        $user_id = $user->id;
+        $user_type = $user->user_type;
+
+        if($request->has('listing_id') && !empty($request->has('listing_id'))) {
+
+            if($user_type == 'host'){
+                $listings = Listings::with([
+                    'addresses.country',
+                    'addresses.state',
+                    'addresses.city',
+                    'addresses.area',
+                    'listingGallery',
+                    'beds',
+                    'extra',
+                    'services',
+                    'feature',
+                    'terms'
+                ])->where('user_id',$user_id)->find($listing_id);
+            } else if($user_type == 'admin'){
+                $listings = Listings::with([
+                    'addresses.country',
+                    'addresses.state',
+                    'addresses.city',
+                    'addresses.area',
+                    'listingGallery',
+                    'beds',
+                    'extra',
+                    'services',
+                    'feature',
+                    'terms'
+                ])->find($listing_id);
+            }
+
+        } else {
+            return response()->json(['Message'=>'Go back listing not found'], 500);
+        }
+
+        if(!$listings){
+            return response()->json(['Message'=>'Listing not found'], 400);
+        }
+
+        return response()->json(['listings'=>$listings]);
+
     }
 
     public function search(Request $request )
     {
+
+        $found_record = [];
+        $currentPage = $request->input('page');
+        $pageSize =$request->input('pagesize');
 
         $listings = Listings::with([
             'addresses.country',
@@ -465,7 +544,9 @@ class listingController extends Controller
         if($request->has('address') && !empty($request->input('address'))){
             $address = $request->query('address');
             $listings->whereHas('addresses',function ($query) use ($address){
-                $query->where('address','like',$address);
+//                $query->where('address','like',$address);
+                $query->where('address','like', '%' . $address . '%');
+
             });
         }
 
@@ -529,7 +610,7 @@ class listingController extends Controller
                 $query->where('children', $order_child ,$children);
             });
         }
-        $listings_search = $listings->get();
+        $listings_search = $listings->paginate($pageSize, ['*'], 'page', $currentPage);
 
         $listings_data=[];
 
@@ -575,7 +656,7 @@ class listingController extends Controller
             if($listing->beds->isNotEmpty()){
                 foreach ($listing->beds as $bed) {
                     $listings_data ['name'] = $bed->name;
-                    $listings_data ['guests'] = $bed->guests;
+                    $listings_data ['room_guests'] = $bed->guests;
                     $listings_data ['beds'] = $bed->beds;
                     $listings_data ['type'] = $bed->type;
                 }
@@ -628,19 +709,29 @@ class listingController extends Controller
                     $listings_data ['additional_rules'] = $term->additional_rules;
                 }
             }
-            print_r($listings_data);
+
+            $found_record[]= $listings_data;
+
         }
+        $listings_paginate['total'] = $listings_search->total(); // Total number of items
+        $listings_paginate['perPage'] = $listings_search->perPage(); // Items per page
+        $listings_paginate['currentPage'] = $listings_search->currentPage(); // Current page number
+        $listings_paginate['lastPage'] = $listings_search->lastPage(); // Last page number
+        $listings_paginate['nextPageUrl'] = $listings_search->nextPageUrl(); // URL for next page
+
+        return response()->json(['listings'=>$found_record,'pagination'=>$listings_paginate]);
     }
 
     public function update(Request $request )
     {
 
         $user = Auth::user();
+        $listing_id =$request->input('listing_id');
         $user_id = $user->id;
         $user_type = $user->user_type;
 
         if($request->has('listing_id') && !empty($request->has('listing_id'))) {
-            $listing_id =$request->input('listing_id');
+
             if($user_type == 'host'){
                 $listings = Listings::with([
                     'addresses.country',
@@ -741,10 +832,12 @@ class listingController extends Controller
         }
         $listing_images = [];
         if($request->hasFile('images')){
+
             foreach ($request->file('images') as $index => $images){
                $name = time().rand(99,9999).'.'.$images->getClientOriginalName();
-               $path = Storage::putFileAs('public/images',$images,$name);
-               $listing_images[] = $path;
+                $path = $images->storeAs('public/images', $name);
+                $url = Storage::url($path);
+               $listing_images[] = $url;
             }
         }
 
@@ -1069,5 +1162,45 @@ class listingController extends Controller
             return response()->json(['Message' => 'Invalid request, listing ID is missing'], 400);
         }
     }
+    public function favorite_listings(Request $request)
+    {
+      $user_id    = $request->input('user_id');
+      $listing_id = $request->input('listing_id');
+      $favorite = Favorite::where('user_id',$user_id)->where('listing_id',$listing_id)->first();
+      if ($favorite) {
+          $favorite->delete();
+          return response()->json(['Added'=>false]);
+      } else {
+          Favorite::create([
+              'user_id'=> $user_id,
+              'listing_id'=>$listing_id
+          ]);
+          return response()->json(['Added'=>true]);
+      }
+
+    }
+
+    public function getFavorite(Request $request)
+    {
+        $user_id = $request->input('user_id');
+        $favorite_seleted= Favorite::where('user_id',$user_id)->get();
+        return response()->json($favorite_seleted);
+    }
+
+    public function images(Request $request)
+    {
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('public/uploads', $filename);
+
+            $url = asset('storage/uploads/' . $filename); // Return the full URL of the uploaded image
+
+            return response()->json(['imageUrl' => $url]);
+        }
+
+        return response()->json(['message' => 'No image found'], 400);
+    }
+
 
 }
