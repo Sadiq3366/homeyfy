@@ -37,8 +37,9 @@ const Description=({fieldData,onChange, decs ,handleDescriptionChange })=>{
                             <label>Type of listing</label>
                             <select
                                 className="form-control"
-                                name="list_type"
-                                id="list_type"
+                                name="listing_type"
+                                id="listing_type"
+                                value={fieldData.listing_type || ""}
                                 onChange={onChange}
                             >
                                 <option value="">Enter your listing Type</option>
@@ -46,7 +47,7 @@ const Description=({fieldData,onChange, decs ,handleDescriptionChange })=>{
                                 <option value="vila">Villa</option>
                                 <option value="glow">Glow</option>
                             </select>
-                        </div>
+                        </div> 
                     </div>
                     <div className="col-md-6 col-sm-12">
                         <div className="form-group">

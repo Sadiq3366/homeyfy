@@ -14,6 +14,9 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use App\Services\ListingService;
+
 
 /**
 * @OA\SecurityScheme(
@@ -108,381 +111,77 @@ class listingController extends Controller
      *     )
      * )
      */
+    public function __construct(protected ListingService $listingService) {}
 
-    public function submit(listingRequest $request)
+    public function submit(ListingRequest $request)
     {
+        try {
+            $listing = $this->listingService->createListing($request->validated());
 
-        $validated = $request->validated();
-
-        $state = State::firstOrCreate(['name' => $validated['state']]);
-
-        // Create or retrieve the city
-        $city = City::firstOrCreate(['name' => $validated['city'], 'state_id' => $state->id]);
-
-        // Create or retrieve the country
-        $country = Country::firstOrCreate(['name' => $validated['country']]);
-
-        // Create or retrieve the area
-        $area = Area::firstOrCreate(['name' => $validated['area'], 'city_id' => $city->id]);
-
-        $address='';
-
-        if($validated['address']){
-            $address = $validated['address'];
-        }
-        if($validated['area']){
-            $address.= ','.$validated['area'];
-        }
-        if($validated['state']){
-            $address.= ','.$validated['state'];
-        }
-        if($validated['city']){
-            $address.= ','.$validated['city'];
-        }
-        if($validated['country']){
-            $address.= ','.$validated['country'];
-        }
-        // Create the Listing record
-        $listing = Listings::create([
-            'listing_title' => $validated['listing_title'],
-            'description' => $validated['description'],
-            'user_id' => Auth::id(),
-            'listing_type' => $validated['listing_type'],
-            'base_price' => $validated['base_price'],
-            'price_mode' => $validated['price_mode'],
-            'is_instance' => $validated['is_instance'],
-            'status' => 'publish',
-            'listing_bedrooms' => $validated['listing_bedrooms'],
-            'guests' => $validated['guests'],
-            'l_beds' => $validated['l_beds'],
-            'baths' => $validated['baths'],
-            'listing_rooms' => $validated['listing_rooms'],
-            'listing_size' => $validated['listing_size'],
-            'listing_size_unit' => $validated['listing_size_unit'],
-            'affiliate_booking_link' => $validated['affiliate_booking_link'],
-            'virtual_tour' => $validated['virtual_tour'],
-        ]);
-
-        // Create the Address record
-        $listing->addresses()->create([
-            'address' => $address,
-            'zip_code'=>$validated['zip_code'],
-            'state_id' => $state->id,
-            'city_id' => $city->id,
-            'country_id' => $country->id,
-            'area_id' => $area->id,
-        ]);
-
-        $images = [];
-
-        if($request->hasFile('images')){
-            foreach ($request->file('images') as $image){
-                $name = time().rand(99,9999).'.'.$image->getClientOriginalName();
-                $path = $image->storeAs('public/images', $name);
-                $url = Storage::url($path);
-                $images[] = $url;
-            }
-        }
-
-        $imagesJson = json_encode($images);
-        $listing->listinggallery()->create([
-            'image_path' => $imagesJson,
-            'video_path'=>$validated['video'],
-
-        ]);
-
-        $accommodations = $request->input('homeyfy_accomodation');
-        $bedroomNames = $guests = $acc_no_of_beds = $acc_bedroom_type =[];
-        $bedImages = [];
-        if($accommodations){
-            foreach ($accommodations as $index =>$accommodation) {
-                $uploadedImages = [];
-                $bedroomNames[] = $accommodation['acc_bedroom_name'];
-                $guests[] = $accommodation['acc_guests'];
-                $acc_no_of_beds[] = $accommodation['acc_no_of_beds'];
-                $acc_bedroom_type[] = $accommodation['acc_bedroom_type'];
-                if ($request->hasFile("homeyfy_accomodation.$index.acc_bed_images")) {
-                    foreach ($request->file("homeyfy_accomodation.$index.acc_bed_images") as $file) {
-                        $file_name = time().rand(99,9999).'.'.$file->getClientOriginalName();
-                        $path = $file->storeAs('public/images', $file_name);
-                        $url = Storage::url($path);
-                        $uploadedImages[]= $url;
-                    }
-                }
-                $bedImages[]=$uploadedImages;
-            }
-
-            $bed = $listing->beds()->create([
-                'listing_id' => $listing->id,
-                'name' => json_encode($bedroomNames), // Convert array to JSON
-                'guests' => json_encode($guests), // Convert array to JSON
-                'beds' => json_encode($acc_no_of_beds), // Convert array to JSON
-                'type' => json_encode($acc_bedroom_type), // Convert array to JSON
+            return response()->json([
+                'message' => 'Listing submitted successfully',
+                'listing_id' => $listing->id
             ]);
 
-            $imagesJson = json_encode($bedImages);
-
-            $bed->bedgallery()->create([
-                'image_path' => $imagesJson,
-            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong during listing submission',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        $ex_name = $ex_price = $ex_type =[];
-        if($validated['homeyfy_extra']){
-            foreach ($validated['homeyfy_extra'] as $index=>$extra){
-                $ex_name []= $extra['name'];
-                $ex_price []= $extra['price'];
-                $ex_type []= $extra['type'];
-            }
-        }
-
-        $listing->extra()->create([
-            'listing_id'=> $listing->id,
-            'name'=> json_encode($ex_name),
-            'price'=>json_encode($ex_price),
-            'type'=>json_encode($ex_type),
-        ]);
-
-        $ser_name = $ser_price = $ser_type =[];
-        if($validated['homeyfy_services']){
-            foreach ($validated['homeyfy_services'] as $index=>$services){
-                $ser_name []= $services['name'];
-                $ser_price []= $services['price'];
-                $ser_type []= $services['bed'];
-            }
-        }
-
-        $listing->services()->create([
-            'listing_id'=> $listing->id,
-            'name'=> json_encode($ser_name),
-            'price'=>json_encode($ser_price),
-            'bed'=>json_encode($ser_type),
-        ]);
-
-        $listing->feature()->create([
-            'listing_id'=> $listing->id,
-            'amenities'=> json_encode($request['amenities']),
-            'facilities'=>json_encode($request['facilities']),
-        ]);
-
-        $listing->terms()->create([
-            'listing_id'=> $listing->id,
-            'cancellation_policy'=> $request['cancellation_policy'],
-            'min_book_hours'=>$request['min_book_hours'],
-            'min_book_weeks'=> $request['min_book_weeks'],
-            'max_book_weeks'=>$request['max_book_weeks'],
-            'min_book_months'=> $request['min_book_months'],
-            'max_book_months'=>$request['max_book_months'],
-            'min_book_days'=> $request['min_book_days'],
-            'max_book_days'=>$request['max_book_days'],
-            'start_hour'=>$request['start_hour'],
-            'end_hour'=>$request['end_hour'],
-            'checkin_after'=>$request['checkin_after'],
-            'checkout_before'=>$request['checkout_before'],
-            'smoke'=>$request['smoke'],
-            'pets'=>$request['pets'],
-            'party'=>$request['party'],
-            'children'=>$request['children'],
-            'child'=>$request['child'],
-            'additional_rules'=>$request['additional_rules'],
-        ]);
-
-        return response()->json(['message' => 'Listing,address,images and beds stored successfully'], 201);
-
     }
-    public function dashboard_view(Request $request )
+    
+    public function dashboard_view(Request $request)
     {
+        $userId = $request->input('user_id');
+        $userType = $request->input('user_type');
+        $page = $request->input('page', 1);
+        $pageSize = $request->input('pagesize', 10);
+        $search = $request->input('search');
+        $sortby = $request->input('sort');
 
-        $id = $request->input('user_id');
-        $user_type = $request->input('user_type');
-        $page = $request->input('page');
-        $pagesize = $request->input('pagesize');
-        $user_record=[];
-        $listings = Listings::with([
-            'addresses.country',
-            'addresses.state',
-            'addresses.city',
-            'addresses.area',
-            'listingGallery',
-            'beds',
-            'extra',
-            'services',
-            'feature',
-            'terms'
+        $listings = $this->listingService->getDashboardListings($userId, $userType, $page, $pageSize,$search,$sortby);
+
+        return response()->json([
+            'status' => true,
+            'listings' => $listings
         ]);
-        if ($user_type == 'host') {
-            $listings->where('user_id', $id);
-        }
-
-        if($request->has('listing_search')){
-            $searchKeyword = $request->query('listing_search');
-
-            $listings->where(function ($query) use ($searchKeyword){
-                $query->where('listing_title', 'like', '%' . $searchKeyword . '%')->orWhere('id', 'like', '%' . $searchKeyword . '%')
-                ->orWhere('description', 'like', '%' . $searchKeyword . '%')->orWhere('base_price', 'like', '%' . $searchKeyword . '%')
-                ->orWhere('status', 'like', '%' . $searchKeyword . '%')->orWhere('listing_bedrooms', 'like', '%' . $searchKeyword . '%')
-                    ->orWhere('guests', 'like', '%' . $searchKeyword . '%')->orWhere('l_beds', 'like', '%' . $searchKeyword . '%')->orWhere('baths', 'like', '%' . $searchKeyword . '%')
-                    ->orWhere('listing_rooms', 'like', '%' . $searchKeyword . '%');
-
-            });
-        }
-
-        $listings = $listings->paginate($pagesize, ['*'], 'page', $page);
-        $listings_data=[];
-
-        foreach ($listings as $listing) {
-            $listings_data ['ID'] = $listing->id;
-            $listings_data ['Title'] = $listing->listing_title;
-            $listings_data ['Description'] = $listing->description;
-            $listings_data ['host_id'] = $listing->user_id;
-            $listings_data ['listing_type'] = $listing->listing_type;
-            $listings_data ['price_mode'] = $listing->price_mode;
-            $listings_data ['is_instance'] = $listing->is_instance;
-            $listings_data ['status'] = $listing->status;
-            $listings_data ['base_price'] = $listing->base_price;
-            $listings_data ['lsiting_bedroom'] = $listing->listing_bedrooms;
-            $listings_data ['guests'] = $listing->guests;
-            $listings_data ['l_beds'] = $listing->l_beds;
-            $listings_data ['baths'] = $listing->baths;
-            $listings_data ['listing_size'] = $listing->listing_size;
-            $listings_data ['listing_size_unit'] = $listing->listing_size_unit;
-            $listings_data ['affiliate_booking_link'] = $listing->affiliate_booking_link;
-            $listings_data ['virtual_tour'] = $listing->virtual_tour;
-            $listings_data ['listing_rooms'] = $listing->listing_rooms;
-            $listings_data ['updated_date'] =$listing->updated_at;
-
-            // Access addresses
-            if($listing->addresses->isNotEmpty()){
-                foreach ($listing->addresses as $address) {
-                    $listings_data['address'] = $address->address;
-                    $listings_data['state'] = $address->state->name ?? null;
-                    $listings_data['city'] = $address->city->name ?? null;
-                    $listings_data['country'] = $address->country->name ?? null;
-                    $listings_data['area'] = $address->area->name ?? null;
-                }
-            }
-            // Access listing gallery
-            if($listing->listingGallery->isNotEmpty()){
-                foreach ($listing->listingGallery as $gallery) {
-                    $listings_data ['image_path'] = $gallery->image_path;
-                    $listings_data ['video_path'] = $gallery->video_path;
-                }
-            }
-
-            // Access beds
-            if($listing->beds->isNotEmpty()){
-                foreach ($listing->beds as $bed) {
-                    $listings_data ['name'] = $bed->name;
-                    $listings_data ['room_guests'] = $bed->guests;
-                    $listings_data ['beds'] = $bed->beds;
-                    $listings_data ['type'] = $bed->type;
-                }
-            }
-
-
-            // Access extras
-            if($listing->extra->isNotEmpty()){
-                foreach ($listing->extra as $extra) {
-                    $listings_data ['name'] = $extra->name;
-                    $listings_data ['price'] = $extra->price;
-                    $listings_data ['type'] = $extra->type;
-                }
-            }
-            // Access services
-            if($listing->services->isNotEmpty()){
-                foreach ($listing->services as $service) {
-                    $listings_data ['name'] = $service->name;
-                    $listings_data ['price'] = $service->price;
-                    $listings_data ['bed'] = $service->bed;
-                }
-            }
-            // Access features
-            if($listing->feature->isNotEmpty()){
-                foreach ($listing->feature as $feature) {
-                    $listings_data ['amenities'] = $feature->amenities;
-                    $listings_data ['facilities'] = $feature->facilities;
-                }
-            }
-
-            // Access terms
-            if($listing->terms->isNotEmpty()){
-                foreach ($listing->terms as $term) {
-                    $listings_data ['cancellation_policy'] = $term->cancellation_policy;
-                    $listings_data ['min_book_hours'] = $term->min_book_hours;
-                    $listings_data ['min_book_weeks'] = $term->min_book_weeks;
-                    $listings_data ['max_book_weeks'] = $term->max_book_weeks;
-                    $listings_data ['min_book_months'] = $term->min_book_months;
-                    $listings_data ['max_book_months'] = $term->max_book_months;
-                    $listings_data ['min_book_days'] = $term->min_book_days;
-                    $listings_data ['max_book_days'] = $term->max_book_days;
-                    $listings_data ['start_hour'] = $term->start_hour;
-                    $listings_data ['end_hour'] = $term->end_hour;
-                    $listings_data ['checkin_after'] = $term->checkin_after;
-                    $listings_data ['checkout_before'] = $term->checkout_before;
-                    $listings_data ['smoke'] = $term->smoke;
-                    $listings_data ['pets'] = $term->pets;
-                    $listings_data ['party'] = $term->party;
-                    $listings_data ['children'] = $term->children;
-                    $listings_data ['additional_rules'] = $term->additional_rules;
-                }
-            }
-            $user_record[] = $listings_data;
-        }
-        $listings_paginate['total'] = $listings->total(); // Total number of items
-
-        return response()->json(['listings'=>$user_record,'pagination'=>$listings_paginate]);
-
     }
-    public function edit(Request $request )
+    public function edit(Request $request)
     {
+        $listingId = $request->input('listing_id');
+
+        if (!$listingId) {
+            return response()->json(['message' => 'Listing ID is required'], 400);
+        }
 
         $user = Auth::user();
-        $listing_id =$request->input('listing_id');
-        $user_id = $user->id;
-        $user_type = $user->user_type;
 
-        if($request->has('listing_id') && !empty($request->has('listing_id'))) {
+        $listingData = $this->listingService->getListingDetailsForEdit($listingId, $user);
 
-            if($user_type == 'host'){
-                $listings = Listings::with([
-                    'addresses.country',
-                    'addresses.state',
-                    'addresses.city',
-                    'addresses.area',
-                    'listingGallery',
-                    'beds',
-                    'extra',
-                    'services',
-                    'feature',
-                    'terms'
-                ])->where('user_id',$user_id)->find($listing_id);
-            } else if($user_type == 'admin'){
-                $listings = Listings::with([
-                    'addresses.country',
-                    'addresses.state',
-                    'addresses.city',
-                    'addresses.area',
-                    'listingGallery',
-                    'beds',
-                    'extra',
-                    'services',
-                    'feature',
-                    'terms'
-                ])->find($listing_id);
-            }
-
-        } else {
-            return response()->json(['Message'=>'Go back listing not found'], 500);
+        if (!$listingData) {
+            return response()->json(['message' => 'Listing not found or unauthorized'], 404);
         }
 
-        if(!$listings){
-            return response()->json(['Message'=>'Listing not found'], 400);
-        }
-
-        return response()->json(['listings'=>$listings]);
-
+        return response()->json(['listings' => $listingData]);
     }
 
-    public function search(Request $request )
+    public function search(Request $request)
+    {
+        $currentPage = $request->input('page');
+        $pageSize = $request->input('pagesize');
+        $search = $request->input('search');
+        $sortby = $request->input('sort');
+
+        $listings = $this->listingService->getSearchListings($currentPage, $pageSize, $search, $sortby);
+
+        return response()->json([
+            'status' => true,
+            'listings' => $listings
+        ]);
+    }
+
+    public function searcha(Request $request )
     {
 
         $found_record = [];
@@ -499,7 +198,8 @@ class listingController extends Controller
             'extra',
             'services',
             'feature',
-            'terms'
+            'terms',
+            'price'
         ]);
 
         if($request->has('listing_title') && !empty($request->input('listing_title'))){
@@ -544,7 +244,7 @@ class listingController extends Controller
         if($request->has('address') && !empty($request->input('address'))){
             $address = $request->query('address');
             $listings->whereHas('addresses',function ($query) use ($address){
-//                $query->where('address','like',$address);
+
                 $query->where('address','like', '%' . $address . '%');
 
             });
@@ -622,6 +322,19 @@ class listingController extends Controller
             $listings_data ['listing_type'] = $listing->listing_type;
             $listings_data ['price_mode'] = $listing->price_mode;
             $listings_data ['is_instance'] = $listing->is_instance;
+            $listings_data ['price_postfix'] = $listing->price_postfix;
+            $listings_data ['weekends_price'] = $listing->weekends_price;
+            $listings_data ['weekends_days'] = $listing->weekends_days;
+            $listings_data ['priceWeek'] = $listing->priceWeek;
+            $listings_data ['priceMonthly'] = $listing->priceMonthly;
+            $listings_data ['allow_additional_guests'] = $listing->allow_additional_guests;
+            $listings_data ['additional_guests_price'] = $listing->additional_guests_price;
+            $listings_data ['num_additional_guests'] = $listing->num_additional_guests;
+            $listings_data ['security_deposit'] = $listing->security_deposit;
+            $listings_data ['city_fee_type'] = $listing->city_fee_type;
+            $listings_data ['city_fee'] = $listing->city_fee;
+            $listings_data ['cleaning_fee'] = $listing->cleaning_fee;
+            $listings_data ['cleaning_fee_type'] = $listing->cleaning_fee_type;
             $listings_data ['status'] = $listing->status;
             $listings_data ['base_price'] = $listing->base_price;
             $listings_data ['lsiting_bedroom'] = $listing->listing_bedrooms;
@@ -648,6 +361,7 @@ class listingController extends Controller
             if($listing->listingGallery->isNotEmpty()){
                 foreach ($listing->listingGallery as $gallery) {
                     $listings_data ['image_path'] = $gallery->image_path;
+                    $listings_data ['main_image'] = $gallery->main_image;
                     $listings_data ['video_path'] = $gallery->video_path;
                 }
             }
@@ -743,7 +457,8 @@ class listingController extends Controller
                     'extra',
                     'services',
                     'feature',
-                    'terms'
+                    'terms',
+                    'price'
                 ])->where('user_id',$user_id)->find($listing_id);
             } else if($user_type == 'admin'){
                 $listings = Listings::with([
@@ -756,7 +471,8 @@ class listingController extends Controller
                     'extra',
                     'services',
                     'feature',
-                    'terms'
+                    'terms',
+                    'price'
                 ])->find($listing_id);
             }
 
@@ -795,10 +511,160 @@ class listingController extends Controller
             $listings->is_instance = $request->input('is_instance');
         }
 
+        //M.Sadiq new changes
+        if($request->has('price_postfix') && !empty($request->input('price_postfix'))){
+            $price = $listings->price->first();
+            if($price){
+                $price->price_postfix = $request->input('price_postfix');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'price_postfix' => $request->input('price_postfix'),
+                ]);
+            }
+        }
+        
+        if($request->has('weekends_price') && !empty($request->input('weekends_price'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->weekends_price = $request->input('weekends_price');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'weekends_price' => $request->input('weekends_price'),
+                ]);
+            }
+        }
+
+        if($request->has('weekends_days') && !empty($request->input('weekends_days'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->weekends_days = $request->input('weekends_days');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'weekends_days' => $request->input('weekends_days'),
+                ]);
+            }
+        }
+
+        if($request->has('priceWeek') && !empty($request->input('priceWeek'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->priceWeek = $request->input('priceWeek');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'priceWeek' => $request->input('priceWeek'),
+                ]);
+            }
+        }
+
+        if($request->has('priceMonthly') && !empty($request->input('priceMonthly'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->priceMonthly = $request->input('priceMonthly');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'priceMonthly' => $request->input('priceMonthly'),
+                ]);
+            }
+        }
+        if($request->has('allow_additional_guests') && !empty($request->input('allow_additional_guests'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->allow_additional_guests = $request->input('allow_additional_guests');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'allow_additional_guests' => $request->input('allow_additional_guests'),
+                ]);
+            }
+        }
+        if($request->has('additional_guests_price') && !empty($request->input('additional_guests_price'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->additional_guests_price = $request->input('additional_guests_price');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'additional_guests_price' => $request->input('additional_guests_price'),
+                ]);
+            }
+        }
+        if($request->has('num_additional_guests') && !empty($request->input('num_additional_guests'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->num_additional_guests = $request->input('num_additional_guests');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'num_additional_guests' => $request->input('num_additional_guests'),
+                ]);
+            }
+        }
+        if($request->has('cleaning_fee') && !empty($request->input('cleaning_fee'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->cleaning_fee = $request->input('cleaning_fee');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'cleaning_fee' => $request->input('cleaning_fee'),
+                ]);
+            }
+        }
+        if($request->has('cleaning_fee_type') && !empty($request->input('cleaning_fee_type'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->cleaning_fee_type = $request->input('cleaning_fee_type');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'cleaning_fee_type' => $request->input('cleaning_fee_type'),
+                ]);
+            }
+        }
+        if($request->has('city_fee') && !empty($request->input('city_fee'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->city_fee = $request->input('city_fee');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'city_fee' => $request->input('city_fee'),
+                ]);
+            }
+        }
+        if($request->has('city_fee_type') && !empty($request->input('city_fee_type'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->city_fee_type = $request->input('city_fee_type');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'city_fee_type' => $request->input('city_fee_type'),
+                ]);
+            }
+        }
+        if($request->has('security_deposit') && !empty($request->input('security_deposit'))){
+            $price =$listings->price->first();
+            if($price){
+                $price->security_deposit = $request->input('security_deposit');
+                $price->save();
+            } else {
+                $listings->price()->create([
+                    'security_deposit' => $request->input('security_deposit'),
+                ]);
+            }
+        }
+
+        //M.Sadiq new changes
+
         if($request->has('status') && !empty($request->input('status'))){
             $listings->status = $request->input('status');
         }
-
 
         if($request->has('listing_bedrooms') && !empty($request->input('listing_bedrooms'))){
             $listings->listing_bedrooms = $request->input('listing_bedrooms');
@@ -830,21 +696,52 @@ class listingController extends Controller
         if($request->has('virtual_tour') && !empty($request->input('virtual_tour'))){
             $listings->virtual_tour = $request->input('virtual_tour');
         }
-        $listing_images = [];
-        if($request->hasFile('images')){
 
-            foreach ($request->file('images') as $index => $images){
-               $name = time().rand(99,9999).'.'.$images->getClientOriginalName();
-                $path = $images->storeAs('public/images', $name);
-                $url = Storage::url($path);
-               $listing_images[] = $url;
+        if($request->has('contact_info') && !empty($request->input('contact_info'))){
+            $listings->contact_info = $request->input('contact_info');
+        }
+        if($request->has('private_note') && !empty($request->input('private_note'))){
+            $listings->private_note = $request->input('private_note');
+        }
+
+        if($request->has('is_feature') && !empty($request->input('is_feature'))){
+            $listings->is_feature = $request->input('is_feature');
+        }
+
+        if($request->has('view_login') && !empty($request->input('view_login'))){
+            $listings->view_login = $request->input('view_login');
+        }
+
+        $listing_images = [];
+
+        if ($request->filled('images') && !empty($request->input('images'))) {
+            $images = $request->input('images');
+
+            if (is_string($images)) {
+                $images = json_decode($images, true); // decode to array
+            }
+
+            if (is_array($images)) {
+                foreach ($images as $imageUrl) {
+                    $listing_images[] = $imageUrl;
+                }
             }
         }
 
         $media_listing = $listings->listinggallery()->first();
-        if($media_listing){
-            $media_listing->image_path = $listing_images;
+
+        if ($media_listing) {
+            $media_listing->image_path = json_encode($listing_images); // save as JSON
             $media_listing->save();
+        }
+
+        
+        if($request->has('featured_image') && !empty($request->input('featured_image'))){
+            $media_listing = $listings->listinggallery()->first();
+            if($media_listing){
+                $media_listing->main_image = $request->input('featured_image');
+                $media_listing->save();
+            }
         }
         if($request->has('video') && !empty($request->input('video'))){
             $media_listing = $listings->listinggallery()->first();
@@ -857,18 +754,33 @@ class listingController extends Controller
 
         //**** Listing address table update Start ****//
 
-        if($request->has('address') && !empty($request->input('address')) ){
+        if($request->has('map_address') && !empty($request->input('map_address')) ){
             $address =$listings->addresses->first();
             if($address){
-                $address->address = $request->input('address');
+                $address->address = $request->input('map_address');
                 $address->save();
             }
 
         }
-        if($request->has('zip_code') && !empty($request->input('zip_code')) ){
+        if($request->has('zipCode') && !empty($request->input('zipCode')) ){
             $address =$listings->addresses->first();
             if($address){
-                $address->zip_code = $request->input('zip_code');
+                $address->zip_code = $request->input('zipCode');
+                $address->save();
+            }
+        }
+        if($request->has('latitude') && !empty($request->input('latitude')) ){
+            $address =$listings->addresses->first();
+            if($address){
+                $address->lat = $request->input('latitude');
+                $address->save();
+            }
+        }
+        
+        if($request->has('longitude') && !empty($request->input('longitude')) ){
+            $address =$listings->addresses->first();
+            if($address){
+                $address->long = $request->input('longitude');
                 $address->save();
             }
         }
@@ -956,9 +868,9 @@ class listingController extends Controller
 
         //**** Listing Extra table update start ****//
 
-        $extra = $request->input('homeyfy_extra');
+        $extra = $request->input('extra');
         $name = $price = $type = [];
-        if(!empty($extra) && $request->has('homeyfy_extra')){
+        if(!empty($extra) && $request->has('extra')){
             foreach ($extra as $data){
                 $name [] = $data['name'];
                 $price [] = $data['price'];
@@ -1200,6 +1112,23 @@ class listingController extends Controller
         }
 
         return response()->json(['message' => 'No image found'], 400);
+    }
+    public function removeImage(Request $request)
+    {
+        $imagePath = $request->input('image_path');
+        $imageRelativePath = str_replace(url('/storage') . '/', '', $imagePath);
+        if(Storage::disk('public')->exists($imageRelativePath)){
+            Storage::disk('public')->delete($imageRelativePath);
+            return response()->json([
+                'status' => 'success',
+                'msg' => 'Image removed successfully from storage',
+            ]);
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'msg' => 'Image not found',
+            ], 404);
+        }
     }
 
 

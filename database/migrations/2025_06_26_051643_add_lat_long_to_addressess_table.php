@@ -11,13 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('media', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('imageable_id');
-            $table->string('imageable_type');
-            $table->json('image_path');
-            $table->string('video_path');
-            $table->timestamps();
+        Schema::table('addresses', function (Blueprint $table) {
+            $table->float('lat')->nullable()->after('address');
+            $table->float('long')->nullable()->after('lat');
         });
     }
 
@@ -26,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('media');
+        Schema::table('addresses', function (Blueprint $table) {
+            $table->dropColumn(['lat', 'lng']);
+        });
     }
 };

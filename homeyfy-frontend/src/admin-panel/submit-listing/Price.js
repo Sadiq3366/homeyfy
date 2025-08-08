@@ -1,10 +1,6 @@
-import React, {useState} from "react";
+import React from "react"; 
 
 const Price=({fieldData,onChange, removeService, addService , services ,handleServiceChange })=>{
-    const [instantBooking, setInstantBooking] = useState((fieldData.is_instance > 0 ) ? 'checked' : '');
-    const handleCheckboxChange = (e) => {
-        setInstantBooking(e.target.checked);
-    };
     return(
         <>
             <div id="prices" className="dashboard-content-block-wrap">
@@ -14,7 +10,12 @@ const Price=({fieldData,onChange, removeService, addService , services ,handleSe
                         <div className="form-group">
                             <label>Instance booking</label>
                             <label className="control control--checkbox radio-tab">Allow instant booking for this place.
-                                <input type="checkbox" checked={instantBooking} onChange={handleCheckboxChange} name="instant_booking"/>
+                                <input
+                                    type="checkbox"
+                                    checked={fieldData.is_instance}
+                                    onChange={onChange}
+                                    name="is_instance"
+                                />
                                 <span className="control__indicator"></span>
                                 <span className="radio-tab-inner"></span>
                             </label>
@@ -67,6 +68,8 @@ const Price=({fieldData,onChange, removeService, addService , services ,handleSe
                                     className="form-control"
                                     name="weekends_days"
                                     id="weekends_days"
+                                    value={fieldData.weekends_days || ""} // controlled by state
+                                    onChange={onChange} // updates the state
                                 >
                                     <option value="">Select your weekends</option>
                                     <option value="sat_sun">Saturday and Sunday</option>
@@ -187,7 +190,7 @@ const Price=({fieldData,onChange, removeService, addService , services ,handleSe
                                 <div className="row">
                                     <div className="col-sm-6 col-xs-6">
                                         <label className="control control--radio radio-tab">
-                                            <input type="radio" checked="checked" name="allow_additional_guests"
+                                            <input type="radio" checked={fieldData.allow_additional_guests === 'yes'} onChange={onChange} name="allow_additional_guests"
                                                    value="yes"/>
                                             <span className="control-text">Yes</span>
                                             <span className="control__indicator"></span>
@@ -196,7 +199,7 @@ const Price=({fieldData,onChange, removeService, addService , services ,handleSe
                                     </div>
                                     <div className="col-sm-6 col-xs-6">
                                         <label className="control control--radio radio-tab">
-                                            <input type="radio" name="allow_additional_guests" value="no"/>
+                                            <input type="radio" checked={fieldData.allow_additional_guests === 'no'} onChange={onChange} name="allow_additional_guests" value="no"/>
                                             <span className="control-text">No</span>
                                             <span className="control__indicator"></span>
                                             <span className="radio-tab-inner"></span>
@@ -240,7 +243,8 @@ const Price=({fieldData,onChange, removeService, addService , services ,handleSe
                             <div className="form-group">
                                 <input type="text"
                                        name="cleaning_fee"
-                                       value=""
+                                       value={fieldData.cleaning_fee}
+                                       onChange={onChange}
                                        className="form-control"
                                        placeholder="Enter the price for cleaning fee"/>
                             </div>
@@ -248,7 +252,7 @@ const Price=({fieldData,onChange, removeService, addService , services ,handleSe
                         <div className="col-sm-3 col-xs-6">
                             <div className="form-group">
                                 <label className="control control--radio radio-tab">
-                                    <input type="radio" name="cleaning_fee_type" value="daily"/>
+                                    <input type="radio" checked={fieldData.cleaning_fee_type==='daily'} onChange={onChange} name="cleaning_fee_type" value="daily"/>
                                     <span className="control-text">Daily</span>
                                     <span className="control__indicator"></span>
                                     <span className="radio-tab-inner"></span>
@@ -258,7 +262,7 @@ const Price=({fieldData,onChange, removeService, addService , services ,handleSe
                         <div className="col-sm-3 col-xs-6">
                             <div className="form-group">
                                 <label className="control control--radio radio-tab">
-                                    <input type="radio" name="cleaning_fee_type" value="per_stay"/>
+                                    <input type="radio" checked={fieldData.cleaning_fee_type==='per_stay'} onChange={onChange} name="cleaning_fee_type" value="per_stay"/>
                                     <span className="control-text">Per stay</span>
                                     <span className="control__indicator"></span>
                                     <span className="radio-tab-inner"></span>
@@ -274,7 +278,8 @@ const Price=({fieldData,onChange, removeService, addService , services ,handleSe
                             <div className="form-group">
                                 <input type="text"
                                        name="city_fee"
-                                       value=""
+                                       value={fieldData.city_fee}
+                                       onChange={onChange}
                                        className="form-control"
                                        placeholder="Enter the price for city fee"/>
                             </div>
@@ -282,7 +287,7 @@ const Price=({fieldData,onChange, removeService, addService , services ,handleSe
                         <div className="col-sm-3 col-xs-6">
                             <div className="form-group">
                                 <label className="control control--radio radio-tab">
-                                    <input type="radio" name="city_fee_type" value="daily"/>
+                                    <input type="radio" checked={fieldData.city_fee_type==='daily'} onChange={onChange} name="city_fee_type" value="daily"/>
                                     <span className="control-text">Daily</span>
                                     <span className="control__indicator"></span>
                                     <span className="radio-tab-inner"></span>
@@ -292,7 +297,7 @@ const Price=({fieldData,onChange, removeService, addService , services ,handleSe
                         <div className="col-sm-3 col-xs-6">
                             <div className="form-group">
                                 <label className="control control--radio radio-tab">
-                                    <input type="radio" name="city_fee_type" value="per_stay"/>
+                                    <input type="radio" checked={fieldData.city_fee_type==='per_stay'} onChange={onChange} name="city_fee_type" value="per_stay"/>
                                     <span className="control-text">Per stay</span>
                                     <span className="control__indicator"></span>
                                     <span className="radio-tab-inner"></span>
@@ -308,7 +313,8 @@ const Price=({fieldData,onChange, removeService, addService , services ,handleSe
                             <div className="form-group">
                                 <input type="text"
                                        name="security_deposit"
-                                       value=""
+                                       value={fieldData.security_deposit}
+                                       onChange={onChange}
                                        className="form-control"
                                        placeholder="Enter price for security deposit"/>
                             </div>

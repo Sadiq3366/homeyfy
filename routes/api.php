@@ -42,6 +42,7 @@ Route::middleware(['auth:api'])->group(function (){
         Route::get('view-listing', [listingController::class, 'dashboard_view']);
         Route::get('edit-listing', [listingController::class, 'edit']);
         Route::post('upload-images', [listingController::class, 'images']);
+        Route::post('remove-images', [listingController::class, 'removeImage']);
         Route::post('update-listing', [listingController::class, 'update']);
         Route::get('delete-listing', [listingController::class, 'delete']);
     })->middleware(['auth', 'verified']);

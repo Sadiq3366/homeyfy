@@ -1,41 +1,73 @@
-import React, {useEffect, useState} from "react";
-import http from "../../http"; // Ensure this is properly configured for Axios or your HTTP library.
+import React, { useEffect, useState } from "react";
+import http from "../../http";
 
-const Media = () => {
-    const [uploadedImages, setUploadedImages] = useState(() => {
-        // Retrieve uploaded images from localStorage when component mounts
-        const savedImages = localStorage.getItem("uploadedImages");
-        return savedImages ? JSON.parse(savedImages) : [];
-    });
+const Media = ({ fieldData, onChange }) => {
+    const [uploadedImages, setUploadedImages] = useState([]);
+    const [featuredImage, setFeaturedImage] = useState(null);
+    const [removeImage, setRemoveImage] = useState(null);
 
     useEffect(() => {
-        // Store uploaded images in localStorage whenever the list changes
-        localStorage.setItem("uploadedImages", JSON.stringify(uploadedImages));
-    }, [uploadedImages]);
+        let images = [];
+        try {
+            images = JSON.parse(fieldData?.images || '[]');
+        } catch (error) {
+        }
+        setUploadedImages(images);
+        setFeaturedImage(fieldData?.featured_image || null);
+    }, [fieldData?.id]);
 
 
-    const handleFileChange = async (event) => {
-        const file = event.target.files[0];
+    useEffect(() => {
+        onChange({
+            target: { name: "images", value: uploadedImages }
+        });
+        onChange({
+            target: { name: "featured_image", value: featuredImage }
+        });
+    }, [uploadedImages, featuredImage]);
 
-        if (file) {
-            const formData = new FormData();
-            formData.append("image", file);
+    useEffect(() => {
+        if (!removeImage) return;
+        const updated = uploadedImages.filter((img) => img !== removeImage);
+        setUploadedImages(updated);
+        if (removeImage === featuredImage) {
+            setFeaturedImage(null);
+        }
 
+        const removeFromServer = async () => {
             try {
                 const token = localStorage.getItem("authToken");
-                const response = await http.post("listing/upload-images/", formData, {
+                await http.post(`listing/remove-images/?image_path=${removeImage}`, null, {
                     headers: {
-                        "Content-Type": "multipart/form-data",
-                        "Authorization": `Bearer ${token}`, // If you're using a Bearer token for auth
+                        Authorization: `Bearer ${token}`,
                     },
                 });
-                const imageUrl = response.data.imageUrl;
-                setUploadedImages((prevImages) => [...prevImages, imageUrl]);
-            } catch (error) {
-                console.error("Error uploading file:", error);
+            } catch (err) {
+                console.error("Image delete error", err);
             }
-        } else {
-            alert("Please select a file first");
+        };
+        removeFromServer();
+        setRemoveImage(null);
+    }, [removeImage]);
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("image", file);
+
+        try {
+            const token = localStorage.getItem("authToken");
+            const res = await http.post("listing/upload-images/", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            const imageUrl = res.data.imageUrl;
+            setUploadedImages((prev) => [...prev, imageUrl]);
+        } catch (err) {
+            console.error("Upload failed", err);
         }
     };
 
@@ -43,9 +75,9 @@ const Media = () => {
         <div id="media" className="dashboard-content-block-wrap">
             <h2>Media</h2>
             <div className="dashboard-content-block">
-                <div id="homeyfy_gallery_dragDrop" className="media-drag-drop">
+                <div className="media-drag-drop">
                     <div className="upload-icon">
-                        <i className="fa fa-image" aria-hidden="true"></i>
+                        <i className="fa fa-image"></i>
                     </div>
                     <h4>
                         Drag and drop the images to customize the gallery order.<br />
@@ -53,37 +85,52 @@ const Media = () => {
                         <span>(Minimum size 1440 x 900 px)</span>
                     </h4>
 
-                    {/* Hidden input for file selection */}
                     <input
                         type="file"
                         id="fileInput"
                         style={{ display: "none" }}
                         onChange={handleFileChange}
                     />
-
-                    {/* Single Button for selecting and uploading */}
                     <button
-                        id="select_gallery_images"
                         className="btn btn-secondary"
-                        onClick={(e) =>{e.preventDefault(); document.getElementById("fileInput").click()}}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            document.getElementById("fileInput").click();
+                        }}
                     >
                         <i className="fa fa-camera"></i> Select and upload
                     </button>
                 </div>
 
-                {/* Show the uploaded image after it's successfully uploaded */}
                 {uploadedImages.length > 0 && (
                     <div className="uploaded-image-previews">
                         <h4>Uploaded Images:</h4>
-                        <div className="d-flex">
+                        <div className="d-flex flex-wrap gap-2">
                             {uploadedImages.map((image, index) => (
-                                <div key={index} className="uploaded-image-preview">
-                                    <input type="hidden" name="images[]" value={image} />
+                                <div
+                                    key={index}
+                                    className={`uploaded-image-preview ${image === featuredImage ? 'featured' : ''}`}
+                                    onClick={() => setFeaturedImage(image)}
+                                    style={{ cursor: 'pointer', position: 'relative' }}
+                                >
                                     <img
                                         src={image}
-                                        alt={`Uploaded preview ${index + 1}`}
-                                        style={{ width: "100%", maxWidth: "90px", marginTop: "10px", height: "85px" }}
+                                        alt={`Uploaded ${index + 1}`}
+                                        style={{
+                                            width: "100%",
+                                            maxWidth: "90px",
+                                            height: "85px",
+                                            border: image === featuredImage ? "2px solid green" : "1px solid #ccc"
+                                        }}
                                     />
+                                    <i
+                                        className="fa fa-close close"
+                                        style={{ position: "absolute", top: 2, right: 2, color: "red" }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setRemoveImage(image);
+                                        }}
+                                    ></i>
                                 </div>
                             ))}
                         </div>

@@ -11,18 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('terms', function (Blueprint $table) {
-            $table->string('child')->after('children');
+        Schema::table('addresses', function (Blueprint $table) {
+            $table->decimal('lat', 10, 7)->nullable()->change();
+            $table->decimal('long', 10, 7)->nullable()->change();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('terms', function (Blueprint $table) {
-            $table->dropColumn('child');
+        Schema::table('addresses', function (Blueprint $table) {
+            $table->dropColumn(['lat', 'long']);
         });
     }
+
 };

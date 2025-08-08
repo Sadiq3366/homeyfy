@@ -1,37 +1,39 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 
-const Search = ()=>{
-    const [search,setSearch]= useState(
-        {
-            keyword : '',
+const Search = ({ onSearch }) => {
+    const [keyword, setKeyword] = useState("");
+
+    const handleChange = (e) => {
+        setKeyword(e.target.value);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (onSearch && keyword.trim()) {
+            onSearch({ keyword });
         }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="d-flex gap-2 align-items-center">
+            <div className="position-relative flex-grow-1">
+                <input
+                    type="text"
+                    name="keyword"
+                    value={keyword}
+                    onChange={handleChange}
+                    className="form-control ps-4"
+                    placeholder="Search"
+                    aria-label="Search listings"
+                />
+                <span className="fa fa-search position-absolute top-50 start-0 translate-middle-y ps-2 text-muted"></span>
+            </div>
+
+            <button type="submit" className="btn btn-secondary">
+                Search
+            </button>
+        </form>
     );
-    const changeHandle=(e)=>{
-        const {value,name} = e.target;
-        setSearch((preSearch=>({
-            ...preSearch,
-            [name]:value,
-        })));
-    }
-    return(
-        <>
-            <form method="get" action="">
-                <div className="d-flex">
-                    <div className="form-group flex-grow-1">
-                        <div className="search-icon fa fa-search">
-                            <input className="form-control" onChange={changeHandle} name="keyword"
-                                   value={search.keyword}
-                                   placeholder="Search" type="text"/>
-                        </div>
-                    </div>
-                    <input type="hidden" name="prop_status"
-                           value=""/>
-                    <button className="btn btn-search btn-secondary"
-                            type="submit">Search
-                    </button>
-                </div>
-            </form>
-        </>
-    )
-}
-export default Search
+};
+
+export default Search;

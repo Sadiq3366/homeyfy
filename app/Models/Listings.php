@@ -28,7 +28,11 @@ class Listings extends Model
         'listing_size',
         'listing_size_unit',
         'affiliate_booking_link',
-        'virtual_tour'
+        'virtual_tour',
+        'contact_info',
+        'private_note',
+        'is_feature',
+        'view_login'
     ];
     public function addresses()
     {
@@ -57,5 +61,9 @@ class Listings extends Model
     public function terms()
     {
         return $this->hasMany(Term::class,'listing_id');
+    }
+    public function price()
+    {
+        return $this->hasMany(Price::class,'listing_id');
     }
 }

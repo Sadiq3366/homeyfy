@@ -167,54 +167,46 @@ class AuthController extends Controller
      * )
      */
 
-    public function login()
+    public function login(Request $request)
     {
-        try {
-            $input = request(['username', 'password']);
-            $field = filter_var($input['username'], FILTER_VALIDATE_EMAIL) ? 'email' : 'user_name';
-            $credentials = [
-                $field => $input['username'],
-                'password' => $input['password']
-            ];
-            if (! $token = auth('api')->attempt($credentials)) {
-                return response()->json(['error' => 'Unauthorized'], 401);
-            }
-            $this->respondWithToken($token);
-            return response()->json([
-                'message' => 'Login Successfully Redirecting.....',
-                'authToken' => $token,
-            ]);
-        } catch (\Exception $e){
-            return response()->json([
-                'error' => 'Login failed',
-                'message' => $e->getMessage()
-            ], 500);
+        $credentials = $request->only('username', 'password');
+
+        $field = filter_var($credentials['username'], FILTER_VALIDATE_EMAIL) ? 'email' : 'user_name';
+
+        if (! $token = auth('api')->attempt([
+            $field => $credentials['username'],
+            'password' => $credentials['password']
+        ])) {
+            return response()->json(['error' => 'Invalid credentials'], 401);
         }
+
+        return $this->respondWithToken($token, 'Login successful');
     }
 
     public function me()
     {
-        return response()->json(auth()->user());
+        return response()->json(auth('api')->user());
     }
 
     public function logout()
     {
-        auth()->logout();
+        auth('api')->logout();
 
         return response()->json(['message' => 'Successfully logged out']);
     }
 
     public function refresh()
     {
-        return $this->respondWithToken(auth()->refresh());
+        return $this->respondWithToken(auth('api')->refresh(), 'Token refreshed');
     }
 
-    protected function respondWithToken($token)
+    protected function respondWithToken($token, $message = null)
     {
         return response()->json([
+            'message' => $message ?? 'Success',
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth('api')->factory()->getTTL() * 6000
+            'expires_in' => auth('api')->factory()->getTTL() * 60, // seconds
         ]);
     }
 
@@ -224,49 +216,53 @@ class AuthController extends Controller
     }
     public function deleteUser($id)
     {
-        User::whereId($id)->first()->delete();
-        return response()->json('Success');
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return response()->json(['message' => 'User deleted successfully']);
     }
-    public function editUserdata($id){
-       return response()->json(User::find($id));
+    public function editUserdata($id)
+    {
+        $user = User::findOrFail($id);
+        return response()->json($user);
     }
-    public function updateUser(Request $request ,$id)
+    public function updateUser(Request $request, $id)
     {
         try {
+            $user = User::findOrFail($id);
 
-            $user = User::find($id);
+            $user->update($request->only([
+                'first_name',
+                'last_name',
+                'user_name',
+                'email',
+                'phone',
+                'user_type',
+            ]));
 
-            $user->update([
-                'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
-                'user_name' => $request->user_name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'user_type' => $request->user_type,
-            ]);
-            return response()->json("Updated successfully");
-
-        } catch (\Exception $e) {
+            return response()->json(['message' => 'User updated successfully']);
+        } catch (Exception $e) {
             return response()->json([
-                'Error' => 'Updating Field',
-                'Message' => $e->getMessage(),
+                'error' => 'Update failed',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
     public function existingUser()
     {
         try {
-            $user = Auth::user();
-            $user_id = $user->id;
-            $user_type = $user->user_type;
-            return response()->json(['user_id'=>$user_id,'user_type'=>$user_type]);
-        } catch (\Exception $e){
-            return response()->json([
-                'Error' => 'Error',
-                'Message' => $e->getMessage(),
-            ],500);
-        }
+            $user = auth('api')->user();
 
+            return response()->json([
+                'user_id' => $user->id,
+                'user_type' => $user->user_type
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'error' => 'Something went wrong',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
 }

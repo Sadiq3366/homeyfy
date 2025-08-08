@@ -21,6 +21,7 @@ import 'slick-carousel/slick/slick-theme.css';
 import LoadingBar from 'react-top-loading-bar';
 import Listings from "./admin-panel/listing-dashboard/Listings";
 import Submit from "./admin-panel/submit-listing/Submit";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function Layout({ handleSubmit, success, error, setProgress }) {
     const location = useLocation();
@@ -54,7 +55,7 @@ function App() {
         try {
             const login = await http.post('/auth/login', users);
             setSuccess(login.data.message);
-            localStorage.setItem('authToken', login.data.authToken);
+            localStorage.setItem('authToken', login.data.access_token);
             await checkAuthStatus();
         } catch (err) {
             setError(err.message);
@@ -72,8 +73,10 @@ function App() {
                 progress={progress}
                 height={3}
             />
+            
             <Layout handleSubmit={handleSubmit} success={success} error={error} setProgress={setProgress} />
         </Router>
+        
     );
 }
 

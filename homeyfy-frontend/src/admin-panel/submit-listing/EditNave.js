@@ -23,11 +23,11 @@ const EditNave =({handleOnchange})=>{
                             <i className="houzez-icon icon-arrow-right-1"></i> Media
                         </a>
                     </li>
-                    <li>
-                        <a href="#" data-val="details" onClick={()=>{handleOnchange('details')}} className="menu-edit-property-link">
-                            <i className="houzez-icon icon-arrow-right-1"></i> Details
-                        </a>
-                    </li>
+                    {/*<li>*/}
+                    {/*    <a href="#" data-val="details" onClick={()=>{handleOnchange('details')}} className="menu-edit-property-link">*/}
+                    {/*        <i className="houzez-icon icon-arrow-right-1"></i> Details*/}
+                    {/*    </a>*/}
+                    {/*</li>*/}
                     <li>
                         <a href="#" data-val="features" onClick={()=>{handleOnchange('features')}} className="menu-edit-property-link">
                             <i className="houzez-icon icon-arrow-right-1"></i> Features
@@ -45,15 +45,15 @@ const EditNave =({handleOnchange})=>{
                     </li>
 
                     <li>
-                        <a href="#" data-val="sub-properties" onClick={()=>{handleOnchange('sublistings')}} className="menu-edit-property-link">
-                            <i className="houzez-icon icon-arrow-right-1"></i> Sub listings
+                        <a href="#" data-val="sub-properties" onClick={()=>{handleOnchange('Bedrooms')}} className="menu-edit-property-link">
+                            <i className="houzez-icon icon-arrow-right-1"></i> Bedrooms
                         </a>
                     </li>
-                    <li>
-                        <a href="#" data-val="attachments" onClick={()=>{handleOnchange('documents')}} className="menu-edit-property-link">
-                            <i className="houzez-icon icon-arrow-right-1"></i> Property Documents
-                        </a>
-                    </li>
+                    {/*<li>*/}
+                    {/*    <a href="#" data-val="attachments" onClick={()=>{handleOnchange('documents')}} className="menu-edit-property-link">*/}
+                    {/*        <i className="houzez-icon icon-arrow-right-1"></i> Property Documents*/}
+                    {/*    </a>*/}
+                    {/*</li>*/}
                     <li>
                         <a href="#" data-val="contact-info" onClick={()=>{handleOnchange('contact')}} className="menu-edit-property-link">
                             <i className="houzez-icon icon-arrow-right-1"></i> Contact Information

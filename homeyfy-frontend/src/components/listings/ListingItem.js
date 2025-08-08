@@ -1,222 +1,246 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import http from "../../http";
 import Slider from "react-slick";
-import {Link, useLocation, useNavigate} from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Spinner from "../Spinner";
 import InfiniteScroll from "react-infinite-scroll-component";
-import data from "bootstrap/js/src/dom/data";
-import {useAuth} from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
 
-const ListingItem =(props)=>{
-    const location = useLocation();
-    const queryParams  = new URLSearchParams(location.search);
+// Fix leaflet icon issue
+import "leaflet/dist/leaflet.css";
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
+  iconUrl: require("leaflet/dist/images/marker-icon.png"),
+  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
+});
 
-    const address = queryParams.get('location') || '';
-    const arrival = queryParams.get('arrival') || '';
-    const departure = queryParams.get('departure') || '';
-    const guests = queryParams.get('guests') || '';
+const FlyToMap = ({ coords }) => {
+  const map = useMap();
 
-    const [listings, setListings] = useState([]);
-    const [page, setPage] = useState(1);
-    const [totalresult, setTotalresult] = useState(0);
-    const [AddFavorite,setAddFavorite]= useState('');
+  useEffect(() => {
+    if (coords) map.flyTo(coords, 14, { duration: 1 });
+  }, [coords]);
 
-    const {loginUserType, loginUserId, functionAction}= useAuth();
-    const navigate = useNavigate();
+  return null;
+};
 
-    const pageSize= 3;
+const ListingItem = ({ progress }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryParams = new URLSearchParams(location.search);
 
-    useEffect( () => {
-        fetchListings();
-    }, []);
-    const fetchListings = async ()=>{
+  const address = queryParams.get("location") || "";
+  const arrival = queryParams.get("arrival") || "";
+  const departure = queryParams.get("departure") || "";
+  const guests = queryParams.get("guests") || "";
 
-        try{
-            props.progress(10);
-            let url = '/auth/listing/search-listing?page='+page+'&pagesize='+pageSize+'&guests='+guests+'&address='+address+'&arrival='+arrival+'&departure='+departure;
-            props.progress(30);
-            let listings_record= await http.get(url);
-            props.progress(50);
-            if(listings_record.data.listings.length > 0){
-                setTotalresult(listings_record.data.pagination.total);
-                setListings(listings_record.data.listings);
-            } else{
-                setListings('');
-            }
-            props.progress(100);
+  const [listings, setListings] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [favorites, setFavorites] = useState({});
+  const [hoverCoords, setHoverCoords] = useState(null);
 
-        } catch (error){
-            console.log(error);
-        }
+  const { loginUserType, loginUserId } = useAuth();
+  const pageSize = 3;
+
+  useEffect(() => {
+    fetchListings();
+  }, []);
+
+  const fetchListings = async () => {
+    try {
+      progress(10);
+      const url = `/auth/listing/search-listing?page=${page}&pagesize=${pageSize}&guests=${guests}&address=${address}&arrival=${arrival}&departure=${departure}`;
+      progress(30);
+      const res = await http.get(url);
+      progress(50);
+
+      const data = res.data.listings;
+      setListings(data.total > 0 ? data.data : []);
+      setTotalResults(data.total);
+
+      progress(100);
+    } catch (error) {
+      console.error(error);
     }
+  };
 
-    const fetchmoredata = async ()=>{
-        try{
-            props.progress(10);
-            let url = `/auth/listing/search-listing?page=${page+1}&pagesize=${pageSize}&guests=${guests}&address=${address}&arrival=${arrival}&departure=${departure}`;
-            setPage(page + 1);
-            props.progress(30);
-            let listings_record= await http.get(url);
-            props.progress(50);
-            if(listings_record.data.listings.length > 0){
-                setTotalresult(listings_record.data.pagination.total);
-                setListings(listings.concat(listings_record.data.listings) );
-            } else{
-                setListings('');
-            }
+  const fetchMoreData = async () => {
+    try {
+      progress(10);
+      const nextPage = page + 1;
+      const url = `/auth/listing/search-listing?page=${nextPage}&pagesize=${pageSize}&guests=${guests}&address=${address}&arrival=${arrival}&departure=${departure}`;
 
-            props.progress(100);
+      const res = await http.get(url);
+      progress(30);
 
-        } catch (error){
-            console.log(error);
-        }
+      const data = res.data.listings;
+      if (data.total > 0) {
+        setListings(prev => [...prev, ...data.data]);
+        setPage(nextPage);
+      }
+
+      progress(100);
+    } catch (error) {
+      console.error(error);
     }
+  };
 
-    const checkFavorite = async (userId)=>{
-        try {
-            const token = localStorage.getItem('authToken');
-            const allFavorite = await http.get('/getFavorite?user_id='+userId,{
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-            });
-            if(allFavorite){
-                allFavorite.data.map((listingId,index)=>(
-                    setAddFavorite(prevFavorite=>({
-                        ...prevFavorite,
-                        [listingId.listing_id]: true
-                    }))
-                ));
+  const checkFavorites = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await http.get(`/getFavorite?user_id=${loginUserId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-            }
-        }catch (error){
-            console.log(error);
-        }
+      const favMap = res.data.reduce((acc, fav) => {
+        acc[fav.listing_id] = true;
+        return acc;
+      }, {});
+      setFavorites(favMap);
+    } catch (error) {
+      console.error(error);
     }
+  };
 
-    useEffect(() => {
-        if (loginUserId) {
-            checkFavorite(loginUserId);
-        }
-    }, [loginUserId]);
+  useEffect(() => {
+    if (loginUserId) checkFavorites();
+  }, [loginUserId]);
 
+  const toggleFavorite = async id => {
+    if (!loginUserId || !loginUserType) return navigate("/login");
 
-    const favoriteHandle= async (id)=>{
-        if(loginUserType && loginUserId){
-            try {
-              const token = localStorage.getItem('authToken');
-              const favorite = await http.post('/favorite?user_id='+loginUserId+'&listing_id='+id,null,{
-                  headers: {
-                      Authorization: `Bearer ${token}`,
-                  },
-              });
-              if(favorite)
-              {
-                 setAddFavorite(prevFavorites =>({
-                     ...prevFavorites,
-                     [id]: favorite.data.Added ? true : false,
-                 }));
-              }
-            }catch (error){
-                console.log(error);
-            }
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await http.post(
+        `/favorite?user_id=${loginUserId}&listing_id=${id}`,
+        null,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-        } else{
-            navigate('/login');
-        }
+      setFavorites(prev => ({ ...prev, [id]: res.data.Added }));
+    } catch (error) {
+      console.error(error);
     }
+  };
 
-    const settings = {
-        dots: false,
-        infinite: true,
-        speed: 500,
-        slidesToShow: 1,
-        slidesToScroll: 1,
-        autoplay: false,
-        autoplaySpeed: 3000,
-        arrows: true,
-        zoomChange:1000,
-    }
+  const sliderSettings = {
+    dots: false,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: false,
+    arrows: true,
+  };
 
-    return(
-        <>
-        <div className="container">
-            <div className="row">
-                <div className="list-items">
-                    <div>
-                        <div className="listing_heading">
-                            Search Results
+  return (
+    <div className="container-fluid">
+      <div className="row">
+        {/* LEFT: Listings */}
+        <div className="col-lg-8 col-md-12">
+          <div className="listing_heading mb-3">Search Results</div>
+          <InfiniteScroll
+            next={fetchMoreData}
+            hasMore={listings.length < totalResults}
+            dataLength={listings.length}
+            loader={<Spinner />}
+          >
+            <div className="row" id="listing_item">
+              {listings.length ? (
+                listings.map((listing, index) => {
+                  const gallery = listing.listing_gallery[0];
+                  const galleryImages = gallery?.image_path ? JSON.parse(gallery.image_path) : [];
+                  const allImages = listing.main_image ? [listing.main_image, ...galleryImages] : galleryImages;
+
+                  return (
+                    <div className="col-lg-4 col-md-6 mb-4" key={index}>
+                      <div
+                        className="card h-100"
+                        onMouseEnter={() =>
+                          listing.addresses[0] && listing.addresses[0].lat && listing.addresses[0].long &&
+                          setHoverCoords([listing.addresses[0].lat, listing.addresses[0].long])
+                        }
+                        onMouseLeave={() => setHoverCoords(null)}
+                      >
+                        <div className="item-header position-relative">
+                          <span className="label-featured label">Featured</span>
+                          <span className="listing_favriout">
+                            <i
+                              onClick={() => toggleFavorite(listing.id)}
+                              className={`fa ${favorites[listing.id] ? "fa-heart" : "fa-heart-o"}`}
+                            ></i>
+                          </span>
+                          <ul className="item-price-wrap">
+                            <li className="item-price">
+                              ${listing.base_price}/{listing.price[0]?.price_postfix}
+                            </li>
+                          </ul>
+                          <Slider {...sliderSettings}>
+                            {allImages.map((img, i) => (
+                              <div key={i}>
+                                <Link to="">
+                                  <img
+                                    src={img}
+                                    alt={`Slide ${i + 1}`}
+                                    style={{ width: "100%", maxHeight: "250px", objectFit: "cover", height: "215px" }}
+                                  />
+                                </Link>
+                              </div>
+                            ))}
+                          </Slider>
                         </div>
-                        <InfiniteScroll
-                            next={fetchmoredata}
-                            hasMore={listings.length!== totalresult}
-                            dataLength={listings.length}
-                            loader={<Spinner />}
-                        >
-                        <div className="listing_item_content" id="listing_item">
-                            {listings ? (
-                             listings.map((listing, index) => (
-
-                                <div className="card" key={index}>
-                                    <div className="item-header">
-                                        <span className="label-featured label">Featured</span>
-                                        <span className="listing_favriout"><i onClick={() => favoriteHandle(listing.ID)} className={`fa ${AddFavorite[listing.ID] ? 'fa-heart' : 'fa-heart-o'}`}  aria-hidden="true"></i></span>
-                                        <ul className="item-price-wrap">
-                                            <li className="item-price">${listing.base_price}/{listing.price_mode}</li>
-                                        </ul>
-
-                                        <Slider {...settings}>
-                                            {JSON.parse(listing.image_path).map((image, imgIndex) => (
-                                                <div key={imgIndex} className="slide">
-                                                    <Link to="">
-                                                        <img width="592" height="444"
-                                                             src={`http://localhost:8000${image}`}
-                                                             alt={`Slide ${imgIndex + 1}`}/></Link>
-
-                                                </div>
-                                            ))}
-
-                                        </Slider>
-                                    </div>
-                                    <div className="item-body flex-grow-1">
-                                        <h2 className="item-title"><Link to="">{listing.Title}</Link></h2>
-                                        <address className="item-address">{listing.address}</address>
-                                        <ul className="item-amenities item-amenities-with-icons">
-                                            <li className="h-beds"><i
-                                                className="fa fa-bed-pulse mr-1"></i><span
-                                                className="item-amenities-text">Beds:</span> <span
-                                                className="hz-figure">{listing.l_beds}</span></li>
-                                            <li className="h-baths"><i
-                                                className="fa fa-bath mr-1"></i><span
-                                                className="item-amenities-text">Baths:</span> <span
-                                                className="hz-figure">{listing.baths}</span></li>
-                                            <li className="h-guest"><i className="fa fa-people-group mr-1"></i><span
-                                                className="item-amenities-text">Guests:</span> <span
-                                                className="hz-figure">{listing.guests}</span></li>
-                                            <li className="h-area"><i
-                                                className="fa fa-ruler-combined mr-1"></i><span
-                                                className="hz-figure">{listing.listing_size}</span> <span
-                                                className="hz-figure area_postfix">{listing.listing_size_unit
-                                            }</span>
-                                            </li>
-                                            <li className="h-type"><span>{listing.listing_type}</span></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                ))
-                            ): (
-                                <div className="listing_not_found">
-                                    Record Not Found
-                                </div>
-                            )}
+                        <div className="item-body p-3">
+                          <h2 className="item-title fs-6">
+                            <Link to="">{listing.listing_title}</Link>
+                          </h2>
+                          <address className="item-address small">{listing.addresses[0]?.address}</address>
+                          <ul className="item-amenities list-unstyled small d-flex flex-wrap">
+                            <li className="me-2"><i className="fa fa-bed-pulse me-1"></i> Beds: {listing.l_beds}</li>
+                            <li className="me-2"><i className="fa fa-bath me-1"></i> Baths: {listing.baths}</li>
+                            <li className="me-2"><i className="fa fa-people-group me-1"></i> Guests: {listing.guests}</li>
+                            <li className="me-2"><i className="fa fa-ruler-combined me-1"></i> {listing.listing_size} {listing.listing_size_unit}</li>
+                            <li><span>{listing.listing_type}</span></li>
+                          </ul>
                         </div>
-                        </InfiniteScroll>
+                      </div>
                     </div>
+                  );
+                })
+              ) : (
+                <div className="col-12">
+                  <div className="listing_not_found">Record Not Found</div>
                 </div>
+              )}
             </div>
+          </InfiniteScroll>
         </div>
 
-        </>
-    );
-}
-export default ListingItem
+        {/* RIGHT: Map */}
+        <div className="col-lg-4 d-none d-lg-block">
+          <div style={{ position: "sticky", top: "80px", height: "calc(100vh - 100px)" }}>
+            <MapContainer center={[25.276987, 55.296249]} zoom={8} style={{ height: "100%", width: "100%" }}>
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© OpenStreetMap contributors" />
+              {hoverCoords && <FlyToMap coords={hoverCoords} />}
+              {listings.map((listing, idx) => (
+                listing.addresses[0] && listing.addresses[0].lat && listing.addresses[0].long && (
+                  <Marker key={idx} position={[listing.addresses[0].lat, listing.addresses[0].long]}>
+                    <Popup>
+                      <strong>{listing.listing_title}</strong><br />
+                      {listing.addresses[0]?.address}
+                    </Popup>
+                  </Marker>
+                )
+              ))}
+            </MapContainer>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ListingItem;

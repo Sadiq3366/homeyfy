@@ -1,32 +1,39 @@
-import React, {createContext, useContext, useEffect, useState} from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import http from "../http";
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({children}) =>{
-    const [loginUserType, setLoginUserType] = useState();
-    const [loginUserId, setLoginUserId] = useState();
+export const AuthProvider = ({ children }) => {
+    const [loginUserType, setLoginUserType] = useState(null);
+    const [loginUserId, setLoginUserId] = useState(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    const logout = () => {
+        localStorage.removeItem('authToken');
+        setLoginUserId(null);
+        setLoginUserType(null);
+        setIsAuthenticated(false);
+    };
 
     const checkAuthStatus = async () => {
-        const token = localStorage.getItem('authToken');
-
-        if(token){
+        const token = localStorage.getItem("authToken");
+        if (token) {
             try {
-                const response = await http.get('check_user/', {
+                const response = await http.get("check_user/", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
                 setLoginUserId(response.data.user_id);
                 setLoginUserType(response.data.user_type);
+                setIsAuthenticated(true);
             } catch (err) {
-                console.error('Error checking authentication status:', err);
+                console.error("Auth check failed. Logging out.");
+                logout(); // Token expired or invalid
             }
-        }else {
-            setLoginUserId(null);
-            setLoginUserType(null);
+        } else {
+            logout(); // No token found
         }
-
     };
 
     useEffect(() => {
@@ -34,9 +41,10 @@ export const AuthProvider = ({children}) =>{
     }, []);
 
     return (
-        <AuthContext.Provider value={{ loginUserType, loginUserId, checkAuthStatus }}>
+        <AuthContext.Provider value={{ loginUserType, loginUserId, isAuthenticated, checkAuthStatus, logout }}>
             {children}
         </AuthContext.Provider>
     );
-}
+};
+
 export const useAuth = () => useContext(AuthContext);

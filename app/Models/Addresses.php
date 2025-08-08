@@ -19,8 +19,10 @@ class Addresses extends Model
         'city_id',
         'country_id',
         'area_id',
+        'lat',
+        'long',
     ];
-    public function listing()
+    public function listing() 
     {
         return $this->belongsTo(Listings::class);
     }

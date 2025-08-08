@@ -11,13 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('media', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('imageable_id');
-            $table->string('imageable_type');
-            $table->json('image_path');
-            $table->string('video_path');
-            $table->timestamps();
+        Schema::table('price', function (Blueprint $table) {
+            $table->softDeletes();
         });
     }
 
@@ -26,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('media');
+        Schema::table('price', function (Blueprint $table) {
+            $table->softDeletes();
+        });
     }
 };
