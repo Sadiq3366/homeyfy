@@ -31,7 +31,12 @@ Route::group(['prefix' => 'auth'], function ($router) {
 });
 
 Route::middleware(['auth:api'])->group(function (){
-    Route::get('check_user',[AuthController::class,'existingUser']);
+    Route::get('/auth/check', function (Request $request) {
+        return response()->json([
+            'id' => $request->user()->id,
+            'type' => $request->user()->user_type
+        ]);
+    });
     Route::post('favorite',[listingController::class,'favorite_listings']);
     Route::get('getFavorite',[listingController::class,'getFavorite']);
     Route::post('me', [AuthController::class,'me']);

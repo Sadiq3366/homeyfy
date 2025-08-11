@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import http from "../../http";
-import Slider from "react-slick";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Spinner from "../Spinner";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useAuth } from "../../context/AuthContext";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-
+import { FaHeart, FaRegHeart, FaBed, FaBath, FaUsers, FaRuler, FaStar, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import ImageSlider from "./gallery/ModernImageSlider"
 // Fix leaflet icon issue
 import "leaflet/dist/leaflet.css";
 delete L.Icon.Default.prototype._getIconUrl;
@@ -19,11 +19,9 @@ L.Icon.Default.mergeOptions({
 
 const FlyToMap = ({ coords }) => {
   const map = useMap();
-
   useEffect(() => {
     if (coords) map.flyTo(coords, 14, { duration: 1 });
-  }, [coords]);
-
+  }, [coords, map]);
   return null;
 };
 
@@ -44,7 +42,7 @@ const ListingItem = ({ progress }) => {
   const [hoverCoords, setHoverCoords] = useState(null);
 
   const { loginUserType, loginUserId } = useAuth();
-  const pageSize = 3;
+  const pageSize = 6;
 
   useEffect(() => {
     fetchListings();
@@ -61,7 +59,6 @@ const ListingItem = ({ progress }) => {
       const data = res.data.listings;
       setListings(data.total > 0 ? data.data : []);
       setTotalResults(data.total);
-
       progress(100);
     } catch (error) {
       console.error(error);
@@ -70,20 +67,15 @@ const ListingItem = ({ progress }) => {
 
   const fetchMoreData = async () => {
     try {
-      progress(10);
       const nextPage = page + 1;
       const url = `/auth/listing/search-listing?page=${nextPage}&pagesize=${pageSize}&guests=${guests}&address=${address}&arrival=${arrival}&departure=${departure}`;
-
       const res = await http.get(url);
-      progress(30);
-
       const data = res.data.listings;
+      
       if (data.total > 0) {
         setListings(prev => [...prev, ...data.data]);
         setPage(nextPage);
       }
-
-      progress(100);
     } catch (error) {
       console.error(error);
     }
@@ -95,7 +87,6 @@ const ListingItem = ({ progress }) => {
       const res = await http.get(`/getFavorite?user_id=${loginUserId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const favMap = res.data.reduce((acc, fav) => {
         acc[fav.listing_id] = true;
         return acc;
@@ -120,126 +111,169 @@ const ListingItem = ({ progress }) => {
         null,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setFavorites(prev => ({ ...prev, [id]: res.data.Added }));
     } catch (error) {
       console.error(error);
     }
   };
 
-  const sliderSettings = {
-    dots: false,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: false,
-    arrows: true,
-  };
-
   return (
-    <div className="container-fluid">
-      <div className="row">
-        {/* LEFT: Listings */}
-        <div className="col-lg-8 col-md-12">
-          <div className="listing_heading mb-3">Search Results</div>
-          <InfiniteScroll
-            next={fetchMoreData}
-            hasMore={listings.length < totalResults}
-            dataLength={listings.length}
-            loader={<Spinner />}
-          >
-            <div className="row" id="listing_item">
-              {listings.length ? (
-                listings.map((listing, index) => {
-                  const gallery = listing.listing_gallery[0];
-                  const galleryImages = gallery?.image_path ? JSON.parse(gallery.image_path) : [];
-                  const allImages = listing.main_image ? [listing.main_image, ...galleryImages] : galleryImages;
+    <>
+      <div className="listings-container">
+        <div className="listings-layout">
+          {/* Listings Section */}
+          <div className="listings-section">
+            <div className="results-header">
+              <h1 className="results-count">
+                {totalResults > 0 ? `${totalResults} stays` : 'Search results'}
+              </h1>
+              {totalResults > 0 && (
+                <p className="results-subtitle">
+                  {address && `in ${address}`} {arrival && departure && `• ${arrival} - ${departure}`}
+                </p>
+              )}
+            </div>
 
-                  return (
-                    <div className="col-lg-4 col-md-6 mb-4" key={index}>
+            <InfiniteScroll
+              next={fetchMoreData}
+              hasMore={listings.length < totalResults}
+              dataLength={listings.length}
+              loader={<Spinner />}
+            >
+              <div className="listings-grid">
+                {listings.length ? (
+                  listings.map((listing, index) => {
+                    const gallery = listing.listing_gallery[0];
+                    const galleryImages = gallery?.image_path ? JSON.parse(gallery.image_path) : [];
+                    const allImages = listing.main_image ? [listing.main_image, ...galleryImages] : galleryImages;
+
+                    return (
                       <div
-                        className="card h-100"
+                        key={index}
+                        className="listing-card"
                         onMouseEnter={() =>
                           listing.addresses[0] && listing.addresses[0].lat && listing.addresses[0].long &&
                           setHoverCoords([listing.addresses[0].lat, listing.addresses[0].long])
                         }
                         onMouseLeave={() => setHoverCoords(null)}
                       >
-                        <div className="item-header position-relative">
-                          <span className="label-featured label">Featured</span>
-                          <span className="listing_favriout">
-                            <i
-                              onClick={() => toggleFavorite(listing.id)}
-                              className={`fa ${favorites[listing.id] ? "fa-heart" : "fa-heart-o"}`}
-                            ></i>
-                          </span>
-                          <ul className="item-price-wrap">
-                            <li className="item-price">
-                              ${listing.base_price}/{listing.price[0]?.price_postfix}
-                            </li>
-                          </ul>
-                          <Slider {...sliderSettings}>
-                            {allImages.map((img, i) => (
-                              <div key={i}>
-                                <Link to="">
-                                  <img
-                                    src={img}
-                                    alt={`Slide ${i + 1}`}
-                                    style={{ width: "100%", maxHeight: "250px", objectFit: "cover", height: "215px" }}
-                                  />
-                                </Link>
-                              </div>
-                            ))}
-                          </Slider>
-                        </div>
-                        <div className="item-body p-3">
-                          <h2 className="item-title fs-6">
-                            <Link to="">{listing.listing_title}</Link>
-                          </h2>
-                          <address className="item-address small">{listing.addresses[0]?.address}</address>
-                          <ul className="item-amenities list-unstyled small d-flex flex-wrap">
-                            <li className="me-2"><i className="fa fa-bed-pulse me-1"></i> Beds: {listing.l_beds}</li>
-                            <li className="me-2"><i className="fa fa-bath me-1"></i> Baths: {listing.baths}</li>
-                            <li className="me-2"><i className="fa fa-people-group me-1"></i> Guests: {listing.guests}</li>
-                            <li className="me-2"><i className="fa fa-ruler-combined me-1"></i> {listing.listing_size} {listing.listing_size_unit}</li>
-                            <li><span>{listing.listing_type}</span></li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="col-12">
-                  <div className="listing_not_found">Record Not Found</div>
-                </div>
-              )}
-            </div>
-          </InfiniteScroll>
-        </div>
+                        <div className="card-image-container">
+                          <span className="featured-badge">Featured</span>
+                          
+                          <button 
+                            className="favorite-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavorite(listing.id);
+                            }}
+                          >
+                            {favorites[listing.id] ? 
+                              <FaHeart className="favorite-icon" /> : 
+                              <FaRegHeart className="favorite-icon" />
+                            }
+                          </button>
 
-        {/* RIGHT: Map */}
-        <div className="col-lg-4 d-none d-lg-block">
-          <div style={{ position: "sticky", top: "80px", height: "calc(100vh - 100px)" }}>
-            <MapContainer center={[25.276987, 55.296249]} zoom={8} style={{ height: "100%", width: "100%" }}>
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© OpenStreetMap contributors" />
-              {hoverCoords && <FlyToMap coords={hoverCoords} />}
-              {listings.map((listing, idx) => (
-                listing.addresses[0] && listing.addresses[0].lat && listing.addresses[0].long && (
-                  <Marker key={idx} position={[listing.addresses[0].lat, listing.addresses[0].long]}>
-                    <Popup>
-                      <strong>{listing.listing_title}</strong><br />
-                      {listing.addresses[0]?.address}
-                    </Popup>
-                  </Marker>
-                )
-              ))}
-            </MapContainer>
+                          <div className="price-badge">
+                            ${listing.base_price}
+                            <span className="price-period">/{listing.price[0]?.price_postfix}</span>
+                          </div>
+
+                          <ImageSlider
+                            images={allImages}
+                            title={listing.listing_title}
+                          />
+                        </div>
+
+                        <Link to={`/listing/${listing.id}`} className="card-link">
+                          <div className="card-content">
+                            <h3 className="listing-title">
+                              {listing.listing_title}
+                            </h3>
+                          
+                          <p className="listing-address">
+                            {listing.addresses[0]?.address}
+                          </p>
+
+                          <div className="amenities-grid">
+                            <div className="amenity-item">
+                              <FaBed className="amenity-icon" />
+                              <span>{listing.l_beds} beds</span>
+                            </div>
+                            <div className="amenity-item">
+                              <FaBath className="amenity-icon" />
+                              <span>{listing.baths} baths</span>
+                            </div>
+                            <div className="amenity-item">
+                              <FaUsers className="amenity-icon" />
+                              <span>{listing.guests} guests</span>
+                            </div>
+                            <div className="amenity-item">
+                              <FaRuler className="amenity-icon" />
+                              <span>{listing.listing_size} {listing.listing_size_unit}</span>
+                            </div>
+                          </div>
+
+                          <div className="card-footer">
+                            <span className="listing-type">{listing.listing_type}</span>
+                            <div className="rating-section">
+                              <FaStar className="rating-stars" />
+                              <span className="rating-text">4.8 (24)</span>
+                            </div>
+                          </div>
+                          </div>
+                        </Link>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="no-results">
+                    <div className="no-results-icon">🏠</div>
+                    <h2 className="no-results-title">No stays found</h2>
+                    <p className="no-results-subtitle">
+                      Try adjusting your search filters or dates
+                    </p>
+                  </div>
+                )}
+              </div>
+            </InfiniteScroll>
+          </div>
+
+          {/* Map Section - Fixed on the right */}
+          <div className="map-section d-none d-lg-block">
+            <div className="map-wrapper">
+              <MapContainer 
+                center={[25.276987, 55.296249]} 
+                zoom={8} 
+                style={{ height: "100%", width: "100%" }}
+              >
+                <TileLayer 
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
+                  attribution="© OpenStreetMap contributors" 
+                />
+                {hoverCoords && <FlyToMap coords={hoverCoords} />}
+                {listings.map((listing, idx) => (
+                  listing.addresses[0] && listing.addresses[0].lat && listing.addresses[0].long && (
+                    <Marker key={idx} position={[listing.addresses[0].lat, listing.addresses[0].long]}>
+                      <Popup>
+                        <div style={{ minWidth: '200px' }}>
+                          <strong>{listing.listing_title}</strong><br />
+                          <span style={{ color: '#666', fontSize: '13px' }}>
+                            {listing.addresses[0]?.address}
+                          </span><br />
+                          <strong style={{ color: '#ff385c', fontSize: '16px' }}>
+                            ${listing.base_price}/{listing.price[0]?.price_postfix}
+                          </strong>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  )
+                ))}
+              </MapContainer>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

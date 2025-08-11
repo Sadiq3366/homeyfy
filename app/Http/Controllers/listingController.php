@@ -181,262 +181,39 @@ class listingController extends Controller
         ]);
     }
 
-    public function searcha(Request $request )
+    public function update(ListingRequest $request)
     {
+        // Already validated by Form Request
+        $validated = $request->validated();
 
-        $found_record = [];
-        $currentPage = $request->input('page');
-        $pageSize =$request->input('pagesize');
+        $user = Auth::user();
 
-        $listings = Listings::with([
-            'addresses.country',
-            'addresses.state',
-            'addresses.city',
-            'addresses.area',
-            'listingGallery',
-            'beds',
-            'extra',
-            'services',
-            'feature',
-            'terms',
-            'price'
-        ]);
+        $listing = $this->listingService->getListingForUpdate($request['listing_id'], $user);
 
-        if($request->has('listing_title') && !empty($request->input('listing_title'))){
-            $listings->where('listing_title','like',$request->query('listing_title'));
+        if (!$listing) {
+            return response()->json(['message' => 'Listing not found'], 404);
         }
 
-        if($request->has('has_featured') && !empty($request->input('has_featured'))){
-            $listings->where('featured','like','1');
-        }
+        // Update main listing table fields
+        $listing->fill($validated);
+        $listing->save();
 
-        $beds = '>=';
+        // Update related data
+        $this->listingService->updatePrice($listing, $request);
+        $this->listingService->updateGallery($listing, $request);
+        $this->listingService->updateAddress($listing, $request);
+        $this->listingService->updateBeds($listing, $request);
+        $this->listingService->updateExtras($listing, $request);
+        $this->listingService->updateServices($listing, $request);
+        $this->listingService->updateFeatures($listing, $request);
+        $this->listingService->updateTerms($listing, $request);
 
-        if($request->has('beds') && !empty($request->input('beds'))){
-            $listings->where('l_beds',$beds ,$request->query('beds'));
-        }
-
-        $guest = '>=';
-
-        if($request->has('guests') && !empty($request->input('guests'))){
-            $listings->where('guests', $guest ,$request->query('guests'));
-        }
-
-        $bedrooms = '=';
-
-        if($request->has('bedrooms') && !empty($request->input('bedrooms'))){
-            $listings->where('listing_bedrooms',$bedrooms ,$request->query('bedrooms'));
-        }
-
-        $baths = '>=';
-
-        if($request->has('baths') && !empty($request->input('baths'))){
-            $listings->where('baths', $baths ,$request->query('baths'));
-        }
-
-        $rooms = '>=';
-
-        if($request->has('rooms') && !empty($request->input('rooms'))){
-            $listings->where('listing_rooms', $rooms ,$request->query('rooms'));
-        }
-
-
-        if($request->has('address') && !empty($request->input('address'))){
-            $address = $request->query('address');
-            $listings->whereHas('addresses',function ($query) use ($address){
-
-                $query->where('address','like', '%' . $address . '%');
-
-            });
-        }
-
-        if($request->has('area') && !empty($request->input('area'))){
-            $area = $request->query('area');
-            $listings->whereHas('addresses.area', function ($query) use ($area){
-               $query->where('name','like',$area);
-            });
-        }
-        if($request->has('city') && !empty($request->input('city'))){
-            $city = $request->query('city');
-            $listings->whereHas('addresses.city', function ($query) use ($city){
-                $query->where('name','like',$city);
-            });
-        }
-        if($request->has('country') && !empty($request->input('country'))){
-            $country = $request->query('country');
-            $listings->whereHas('addresses.country', function ($query) use ($country){
-                $query->where('name','like',$country);
-            });
-        }
-        if($request->has('state') && !empty($request->input('state'))){
-            $state = $request->query('state');
-            $listings->whereHas('addresses.state', function ($query) use ($state){
-                $query->where('name','like',$state);
-            });
-        }
-
-        if($request->has('smoke') && !empty($request->input('smoke'))){
-            $smoke = $request->query('smoke');
-            $listings->whereHas('terms', function ($query) use ($smoke){
-                $query->where('smoke','like',$smoke);
-            });
-        }
-        if($request->has('pets') && !empty($request->input('pets'))){
-            $pets = $request->query('pets');
-            $listings->whereHas('terms', function ($query) use ($pets){
-                $query->where('pets','like',$pets);
-            });
-        }
-
-        if($request->has('party') && !empty($request->input('party'))){
-            $party = $request->query('party');
-            $listings->whereHas('terms', function ($query) use ($party){
-                $query->where('party','like',$party);
-            });
-        }
-
-        if($request->has('child') && !empty($request->input('child')) && $request->query('child') !=0 ){
-            $child = $request->query('child');
-            $listings->whereHas('terms', function ($query) use ($child){
-                $query->where('child','like',$child);
-            });
-        }
-
-        $order_child = '>=';
-
-        if($request->has('children') && !empty($request->input('children')) ){
-            $children = $request->query('children');
-            $listings->whereHas('terms', function ($query) use ($children, $order_child){
-                $query->where('children', $order_child ,$children);
-            });
-        }
-        $listings_search = $listings->paginate($pageSize, ['*'], 'page', $currentPage);
-
-        $listings_data=[];
-
-        foreach ($listings_search as $listing) {
-            $listings_data ['ID'] = $listing->id;
-            $listings_data ['Title'] = $listing->listing_title;
-            $listings_data ['Description'] = $listing->description;
-            $listings_data ['host_id'] = $listing->user_id;
-            $listings_data ['listing_type'] = $listing->listing_type;
-            $listings_data ['price_mode'] = $listing->price_mode;
-            $listings_data ['is_instance'] = $listing->is_instance;
-            $listings_data ['price_postfix'] = $listing->price_postfix;
-            $listings_data ['weekends_price'] = $listing->weekends_price;
-            $listings_data ['weekends_days'] = $listing->weekends_days;
-            $listings_data ['priceWeek'] = $listing->priceWeek;
-            $listings_data ['priceMonthly'] = $listing->priceMonthly;
-            $listings_data ['allow_additional_guests'] = $listing->allow_additional_guests;
-            $listings_data ['additional_guests_price'] = $listing->additional_guests_price;
-            $listings_data ['num_additional_guests'] = $listing->num_additional_guests;
-            $listings_data ['security_deposit'] = $listing->security_deposit;
-            $listings_data ['city_fee_type'] = $listing->city_fee_type;
-            $listings_data ['city_fee'] = $listing->city_fee;
-            $listings_data ['cleaning_fee'] = $listing->cleaning_fee;
-            $listings_data ['cleaning_fee_type'] = $listing->cleaning_fee_type;
-            $listings_data ['status'] = $listing->status;
-            $listings_data ['base_price'] = $listing->base_price;
-            $listings_data ['lsiting_bedroom'] = $listing->listing_bedrooms;
-            $listings_data ['guests'] = $listing->guests;
-            $listings_data ['l_beds'] = $listing->l_beds;
-            $listings_data ['baths'] = $listing->baths;
-            $listings_data ['listing_size'] = $listing->listing_size;
-            $listings_data ['listing_size_unit'] = $listing->listing_size_unit;
-            $listings_data ['affiliate_booking_link'] = $listing->affiliate_booking_link;
-            $listings_data ['virtual_tour'] = $listing->virtual_tour;
-            $listings_data ['listing_rooms'] = $listing->listing_rooms;
-
-            // Access addresses
-            if($listing->addresses->isNotEmpty()){
-                foreach ($listing->addresses as $address) {
-                    $listings_data['address'] = $address->address;
-                    $listings_data['state'] = $address->state->name ?? null;
-                    $listings_data['city'] = $address->city->name ?? null;
-                    $listings_data['country'] = $address->country->name ?? null;
-                    $listings_data['area'] = $address->area->name ?? null;
-                }
-            }
-            // Access listing gallery
-            if($listing->listingGallery->isNotEmpty()){
-                foreach ($listing->listingGallery as $gallery) {
-                    $listings_data ['image_path'] = $gallery->image_path;
-                    $listings_data ['main_image'] = $gallery->main_image;
-                    $listings_data ['video_path'] = $gallery->video_path;
-                }
-            }
-
-            // Access beds
-            if($listing->beds->isNotEmpty()){
-                foreach ($listing->beds as $bed) {
-                    $listings_data ['name'] = $bed->name;
-                    $listings_data ['room_guests'] = $bed->guests;
-                    $listings_data ['beds'] = $bed->beds;
-                    $listings_data ['type'] = $bed->type;
-                }
-            }
-
-
-            // Access extras
-            if($listing->extra->isNotEmpty()){
-                foreach ($listing->extra as $extra) {
-                    $listings_data ['name'] = $extra->name;
-                    $listings_data ['price'] = $extra->price;
-                    $listings_data ['type'] = $extra->type;
-                }
-            }
-            // Access services
-            if($listing->services->isNotEmpty()){
-                foreach ($listing->services as $service) {
-                    $listings_data ['name'] = $service->name;
-                    $listings_data ['price'] = $service->price;
-                    $listings_data ['bed'] = $service->bed;
-                }
-            }
-            // Access features
-            if($listing->feature->isNotEmpty()){
-                foreach ($listing->feature as $feature) {
-                    $listings_data ['amenities'] = $feature->amenities;
-                    $listings_data ['facilities'] = $feature->facilities;
-                }
-            }
-
-            // Access terms
-            if($listing->terms->isNotEmpty()){
-                foreach ($listing->terms as $term) {
-                    $listings_data ['cancellation_policy'] = $term->cancellation_policy;
-                    $listings_data ['min_book_hours'] = $term->min_book_hours;
-                    $listings_data ['min_book_weeks'] = $term->min_book_weeks;
-                    $listings_data ['max_book_weeks'] = $term->max_book_weeks;
-                    $listings_data ['min_book_months'] = $term->min_book_months;
-                    $listings_data ['max_book_months'] = $term->max_book_months;
-                    $listings_data ['min_book_days'] = $term->min_book_days;
-                    $listings_data ['max_book_days'] = $term->max_book_days;
-                    $listings_data ['start_hour'] = $term->start_hour;
-                    $listings_data ['end_hour'] = $term->end_hour;
-                    $listings_data ['checkin_after'] = $term->checkin_after;
-                    $listings_data ['checkout_before'] = $term->checkout_before;
-                    $listings_data ['smoke'] = $term->smoke;
-                    $listings_data ['pets'] = $term->pets;
-                    $listings_data ['party'] = $term->party;
-                    $listings_data ['children'] = $term->children;
-                    $listings_data ['additional_rules'] = $term->additional_rules;
-                }
-            }
-
-            $found_record[]= $listings_data;
-
-        }
-        $listings_paginate['total'] = $listings_search->total(); // Total number of items
-        $listings_paginate['perPage'] = $listings_search->perPage(); // Items per page
-        $listings_paginate['currentPage'] = $listings_search->currentPage(); // Current page number
-        $listings_paginate['lastPage'] = $listings_search->lastPage(); // Last page number
-        $listings_paginate['nextPageUrl'] = $listings_search->nextPageUrl(); // URL for next page
-
-        return response()->json(['listings'=>$found_record,'pagination'=>$listings_paginate]);
+        return response()->json(['Message' => 'Listing updated successfully']);
     }
 
-    public function update(Request $request )
+
+
+    public function updatea(Request $request )
     {
 
         $user = Auth::user();

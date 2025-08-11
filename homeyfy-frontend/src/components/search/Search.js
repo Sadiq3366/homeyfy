@@ -3,33 +3,25 @@ import React, { useState } from "react";
 const Search = ({ onSearch }) => {
     const [keyword, setKeyword] = useState("");
 
-    const handleChange = (e) => {
-        setKeyword(e.target.value);
-    };
-
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (onSearch && keyword.trim()) {
-            onSearch({ keyword });
-        }
+        onSearch({ keyword: keyword.trim() });
     };
 
     return (
-        <form onSubmit={handleSubmit} className="d-flex gap-2 align-items-center">
-            <div className="position-relative flex-grow-1">
+        <form onSubmit={handleSubmit} className="search-bar d-flex align-items-center">
+            <div className="search-input-wrapper position-relative flex-grow-1">
+                <span className="fa fa-search search-icon"></span>
                 <input
                     type="text"
-                    name="keyword"
                     value={keyword}
-                    onChange={handleChange}
-                    className="form-control ps-4"
-                    placeholder="Search"
+                    onChange={(e) => setKeyword(e.target.value)}
+                    className="form-control search-input"
+                    placeholder="Search properties..."
                     aria-label="Search listings"
                 />
-                <span className="fa fa-search position-absolute top-50 start-0 translate-middle-y ps-2 text-muted"></span>
             </div>
-
-            <button type="submit" className="btn btn-secondary">
+            <button type="submit" className="btn btn-primary search-btn">
                 Search
             </button>
         </form>

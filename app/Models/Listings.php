@@ -16,7 +16,6 @@ class Listings extends Model
         'description',
         'listing_type',
         'base_price',
-        'price_mode',
         'is_instance',
         'status',
         'user_id',

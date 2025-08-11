@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 
 class ListingService
 {
+    
     public function createListing(array $data)
     {
         return DB::transaction(function () use ($data) {
@@ -51,6 +52,176 @@ class ListingService
         });
     }
 
+    public function getListingForUpdate(int $listingId, $user)
+    {
+        $query = Listings::with([
+            'addresses.country',
+            'addresses.state',
+            'addresses.city',
+            'addresses.area',
+            'listingGallery',
+            'beds',
+            'extra',
+            'services',
+            'feature',
+            'terms',
+            'price'
+        ]);
+
+        if ($user->user_type === 'host') {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query->find($listingId);
+    }
+
+    public function updatePrice($listing, Request $request)
+    {
+        $price = $listing->price->first() ?? $listing->price()->create([]);
+
+        $price->fill($request->only([
+            'price_postfix', 'weekends_price', 'weekends_days', 'priceWeek', 'priceMonthly',
+            'allow_additional_guests', 'additional_guests_price', 'num_additional_guests',
+            'cleaning_fee', 'cleaning_fee_type', 'city_fee', 'city_fee_type', 'security_deposit'
+        ]));
+
+        $price->save();
+    }
+
+    public function updateGallery($listing, Request $request)
+    {
+        $media = $listing->listinggallery()->first();
+
+        if ($request->filled('images')) {
+            $images = is_string($request->images) ? json_decode($request->images, true) : $request->images;
+            $media->image_path = json_encode($images);
+        }
+
+        if ($request->filled('featured_image')) {
+            $media->main_image = $request->featured_image;
+        }
+
+        if ($request->filled('video')) {
+            $media->video_path = $request->video;
+        }
+
+        $media->save();
+    }
+
+    public function updateAddress($listing, Request $request)
+    {
+        $address = $listing->addresses->first();
+
+        if ($address) {
+            $address->fill([
+                'address'   => $request->map_address,
+                'zip_code'  => $request->zipCode,
+                'lat'       => $request->latitude,
+                'long'      => $request->longitude,
+            ])->save();
+
+            if ($state = $address->state) {
+                $state->name = $request->state;
+                $state->save();
+            }
+            if ($city = $address->city) {
+                $city->name = $request->city;
+                $city->save();
+            }
+            if ($country = $address->country) {
+                $country->name = $request->country;
+                $country->save();
+            }
+            if ($area = $address->area) {
+                $area->name = $request->area;
+                $area->save();
+            }
+        }
+    }
+
+    public function updateBeds($listing, Request $request)
+    {
+        if (!$request->filled('homeyfy_accomodation')) return;
+
+        $beds = $listing->beds->first();
+        $bedImages = [];
+
+        foreach ($request->homeyfy_accomodation as $index => $acc) {
+            $uploadedImages = [];
+            if ($request->hasFile("homeyfy_accomodation.$index.acc_bed_images")) {
+                foreach ($request->file("homeyfy_accomodation.$index.acc_bed_images") as $image) {
+                    $imageName = time() . rand(99, 9999) . '.' . $image->getClientOriginalName();
+                    $uploadedImages[] = Storage::putFileAs('public/images', $image, $imageName);
+                }
+            }
+            $bedImages[] = $uploadedImages;
+        }
+
+        if ($beds) {
+            $beds->name   = array_column($request->homeyfy_accomodation, 'acc_bedroom_name');
+            $beds->guests = array_column($request->homeyfy_accomodation, 'acc_guests');
+            $beds->beds   = array_column($request->homeyfy_accomodation, 'acc_no_of_beds');
+            $beds->type   = array_column($request->homeyfy_accomodation, 'acc_bedroom_type');
+            $beds->save();
+
+            if ($bedGallery = $beds->bedgallery()->first()) {
+                $bedGallery->image_path = $bedImages;
+                $bedGallery->save();
+            }
+        }
+    }
+
+    public function updateExtras($listing, Request $request)
+    {
+        if (!$request->filled('extra')) return;
+
+        $extras = $listing->extra->first();
+        if ($extras) {
+            $extras->name  = array_column($request->extra, 'name');
+            $extras->price = array_column($request->extra, 'price');
+            $extras->type  = array_column($request->extra, 'type');
+            $extras->save();
+        }
+    }
+
+    public function updateServices($listing, Request $request)
+    {
+        if (!$request->filled('homeyfy_services')) return;
+
+        $services = $listing->services->first();
+        if ($services) {
+            $services->name  = array_column($request->homeyfy_services, 'name');
+            $services->price = array_column($request->homeyfy_services, 'price');
+            $services->bed   = array_column($request->homeyfy_services, 'bed');
+            $services->save();
+        }
+    }
+
+    public function updateFeatures($listing, Request $request)
+    {
+        $feature = $listing->feature->first();
+        if ($feature) {
+            if ($request->filled('amenities')) $feature->amenities = $request->amenities;
+            if ($request->filled('facilities')) $feature->facilities = $request->facilities;
+            $feature->save();
+        }
+    }
+
+    public function updateTerms($listing, Request $request)
+    {
+        $term = $listing->terms->first();
+        if ($term) {
+            $term->fill($request->only([
+                'cancellation_policy', 'min_book_hours', 'min_book_weeks', 'max_book_weeks',
+                'min_book_months', 'max_book_months', 'min_book_days', 'max_book_days',
+                'start_hour', 'end_hour', 'checkin_after', 'checkout_before',
+                'smoke', 'pets', 'party', 'children', 'additional_rules', 'child'
+            ]));
+            $term->save();
+        }
+    }
+
+
     private function handlePrice($listing, $data)
     {
         $priceData = collect([
@@ -89,7 +260,7 @@ class ListingService
     private function handleGallery($listing, $data)
     {
         $images = is_string($data['images']) ? json_decode($data['images'], true) : $data['images'];
-        
+
         $listing->listinggallery()->create([
             'image_path' => json_encode($images ?? []),
             'main_image' => $data['featured_image'] ?? '',

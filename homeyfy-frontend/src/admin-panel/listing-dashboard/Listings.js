@@ -15,6 +15,7 @@ const Listings = ({ active }) => {
     const [totalResults, setTotalResults] = useState(0);
     const [keyword, setKeyword] = useState('');
     const [sortOrder, setSortOrder] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const pageSize = 4;
     const totalPages = Math.ceil(totalResults / pageSize);
@@ -22,10 +23,13 @@ const Listings = ({ active }) => {
     const fetchListings = useCallback(async () => {
         if (!loginUserId) return;
 
+        setLoading(true);
+
         try {
             const token = localStorage.getItem("authToken");
             const { data } = await http.get(
-                `listing/view-listing`, {
+                `listing/view-listing`,
+                {
                     params: {
                         user_id: loginUserId,
                         user_type: loginUserType,
@@ -44,6 +48,8 @@ const Listings = ({ active }) => {
             setTotalResults(data?.listings?.total || 0);
         } catch (error) {
             console.error("Error fetching listings:", error);
+        } finally {
+            setLoading(false);
         }
     }, [loginUserId, loginUserType, page, keyword, sortOrder]);
 
@@ -57,12 +63,12 @@ const Listings = ({ active }) => {
 
     const handleSearch = ({ keyword }) => {
         setKeyword(keyword);
-        setPage(1); // Reset page on new search
+        setPage(1);
     };
 
     const handleSortOrderChange = (e) => {
         setSortOrder(e.target.value);
-        setPage(1); // Reset page on sort
+        setPage(1);
     };
 
     return (
@@ -80,7 +86,7 @@ const Listings = ({ active }) => {
                         <h1>Properties</h1>
                     </div>
                     <div className="dashboard-header-right">
-                        <Link className="btn btn-primary" to="/create-listing">
+                        <Link className="btn btn-primary" to="/create-listings">
                             Create Listing
                         </Link>
                     </div>
@@ -101,8 +107,14 @@ const Listings = ({ active }) => {
                             </div>
                         </div>
 
-                        {/* Table */}
-                        {listings.length > 0 ? (
+                        {/* Loader / Table / Not Found */}
+                        {loading ? (
+                            <div className="d-flex justify-content-center align-items-center py-5">
+                                <div className="spinner-border text-primary" role="status" style={{ width: "3rem", height: "3rem" }}>
+                                    <span className="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        ) : listings.length > 0 ? (
                             <table className="dashboard-table dashboard-table-properties table-lined table-hover responsive-table">
                                 <thead>
                                     <tr>
@@ -122,13 +134,16 @@ const Listings = ({ active }) => {
                                 </tbody>
                             </table>
                         ) : (
-                            <div className="listing_not_found">Record Not Found</div>
+                            <div className="listing_not_found text-center py-5">
+                                <i className="fas fa-search-minus fa-2x mb-2 text-muted"></i>
+                                <p className="text-muted">No listings found</p>
+                            </div>
                         )}
                     </div>
                 </div>
 
                 {/* Pagination */}
-                {totalPages > 1 && (
+                {!loading && totalPages > 1 && (
                     <Pagination
                         page={page}
                         onPageChange={handlePageChange}
@@ -141,3 +156,4 @@ const Listings = ({ active }) => {
 };
 
 export default Listings;
+    

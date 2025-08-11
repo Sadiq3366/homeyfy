@@ -1,50 +1,35 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import http from "../http";
+import React, { createContext, useContext, useState } from "react";
+import http from "../http"; // your axios instance
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [loginUserType, setLoginUserType] = useState(null);
-    const [loginUserId, setLoginUserId] = useState(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginUserId, setLoginUserId] = useState(null);
+  const [loginUserType, setLoginUserType] = useState(null);
 
-    const logout = () => {
-        localStorage.removeItem('authToken');
-        setLoginUserId(null);
-        setLoginUserType(null);
-        setIsAuthenticated(false);
-    };
+  const checkAuthStatus = async () => {
+  try {
+    const res = await http.get("/auth/check");
+    if (res.data?.id && res.data?.type) {
+      setLoginUserId(res.data.id);
+      setLoginUserType(res.data.type);
+      return true;
+    }
+    throw new Error("Invalid auth response");
+  } catch (err) {
+    // localStorage.removeItem("authToken");
+    setLoginUserId(null);
+    setLoginUserType(null);
+    return false;
+  }
+};
 
-    const checkAuthStatus = async () => {
-        const token = localStorage.getItem("authToken");
-        if (token) {
-            try {
-                const response = await http.get("check_user/", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                setLoginUserId(response.data.user_id);
-                setLoginUserType(response.data.user_type);
-                setIsAuthenticated(true);
-            } catch (err) {
-                console.error("Auth check failed. Logging out.");
-                logout(); // Token expired or invalid
-            }
-        } else {
-            logout(); // No token found
-        }
-    };
 
-    useEffect(() => {
-        checkAuthStatus();
-    }, []);
-
-    return (
-        <AuthContext.Provider value={{ loginUserType, loginUserId, isAuthenticated, checkAuthStatus, logout }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  return (
+    <AuthContext.Provider value={{ loginUserId, loginUserType, checkAuthStatus }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);

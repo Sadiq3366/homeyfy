@@ -1,106 +1,130 @@
-import React, {useEffect, useState} from "react";
-import {Link, useNavigate} from "react-router-dom";
-import {useAuth} from "../../context/AuthContext";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import http from "../../http"; // Axios instance
 
-const Login = (props)=>{
-    const [users,setUser] = useState([]);
-    const {loginUserType, loginUserId, checkAuthStatus} = useAuth();
-    const handleChange = (e)=>{
-        const {name,value}= e.target;
-        setUser({...users,[name]:value});
+const Login = () => {
+  const [users, setUser] = useState({});
+  const [loading, setLoading] = useState(false); // loading state
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  const { loginUserType, loginUserId, logoutUser, checkAuthStatus } = useAuth();
+  const navigate = useNavigate();
+
+  // Handle input changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setUser({ ...users, [name]: value });
+  };
+
+  // Handle login submit
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+
+    try {
+      const login = await http.post("/auth/login", users);
+      setSuccess(login.data.message);
+      localStorage.setItem("authToken", login.data.access_token);
+      localStorage.setItem("loginTime", Date.now());
+
+      await checkAuthStatus(); // update auth context
+
+      navigate("/users"); // redirect on success
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        props.loginAction(users);
+  };
+
+  // Auto-logout check
+  useEffect(() => {
+    const checkExpiry = () => {
+      const loginTime = localStorage.getItem("loginTime");
+      if (loginTime && Date.now() - loginTime > 24 * 60 * 60 * 1000) {
+        logoutUser();
+        navigate("/login");
+      }
     };
-    const navigate = useNavigate();
 
-    return(
-        <div>
-            {loginUserType && loginUserId ? (
-                navigate('/users')
-            ): (
-                <div className="container mt-5 mb-5 col-md-6 form-design">
-                    <div className="row">
-                        <div className="col-md-6 register_logo">
-                            <div className="login-register-title">
-                                Welcome to you on the login form
-                            </div>
-                        </div>
-                        <div className='col-md-6 pt-3 pb-3 '>
-                            <h3 className="mb-4">Login</h3>
+    const interval = setInterval(checkExpiry, 60 * 1000); // check every minute
+    return () => clearInterval(interval);
+  }, [logoutUser, navigate]);
 
-                            {props.loginError && (
-                                <div className="alert alert-danger mt-3" role="alert">
-                                    {props.loginError}
-                                </div>
-                            )}
-                            {props.loginSuccess && (
-                                <div className="alert alert-success" role="alert">
-                                    {props.loginSuccess}
-                                    {navigate('/users')}
-                                </div>
-                            )}
-                            <form onSubmit={handleSubmit}>
+  // If already logged in, go to users
+  useEffect(() => {
+    if (loginUserType && loginUserId) {
+      navigate("/users");
+    }
+  }, [loginUserType, loginUserId, navigate]);
 
-                                <div className="form-floating mb-3">
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        id="username"
-                                        name="username"
-                                        placeholder="User Name or Email"
-                                        value={users.user_name}
-                                        onChange={handleChange}
-                                    />
-                                    <label htmlFor="user_name">User-Name/Email</label>
-                                </div>
+  return (
+    <div className="login-page d-flex justify-content-center align-items-center">
+      <div className="login-card card p-4 shadow-lg">
+        <h3 className="text-center mb-2 fw-bold">Welcome Back 👋</h3>
+        <p className="text-center text-muted mb-4">Please login to continue</p>
 
-                                <div className="form-floating mb-3">
-                                    <input
-                                        type="password"
-                                        className="form-control"
-                                        id="password"
-                                        name="password"
-                                        placeholder="Password"
-                                        value={users.password}
-                                        onChange={handleChange}
-                                    />
-                                    <label htmlFor="password">Password</label>
-                                </div>
+        {loading && (
+          <div className="alert alert-info">⏳ Please wait, request sent...</div>
+        )}
+        {error && <div className="alert alert-danger">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
 
-                                <div className="text-end">
-                                    <button type="submit" className="btn btn-primary btn-full-width">Login</button>
-                                </div>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3 position-relative">
+            <i className="fas fa-user input-icon"></i>
+            <input
+              type="text"
+              className="form-control ps-5"
+              placeholder="Username or Email"
+              name="username"
+              value={users.username || ""}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-                                <div className="text-center">
-                                    --------- Or Login Using ---------
-                                </div>
+          <div className="mb-3 position-relative">
+            <i className="fas fa-lock input-icon"></i>
+            <input
+              type="password"
+              className="form-control ps-5"
+              placeholder="Password"
+              name="password"
+              value={users.password || ""}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-                            </form>
-                            <div className="mt-2 space-y-2 text-center">
+          <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
 
-                                <button className="btn social_btn">
-                                    Google
-                                </button>
-
-                                <button className="btn social_btn">
-                                    Facebook
-                                </button>
-                            </div>
-                            <div className="mt-2 space-y-2 text-center">
-                                <div className="text-center">
-                                    New user? <Link to="/register">Create and Account</Link>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            )}
-
+        <div className="text-center mt-3 text-muted">Or login with</div>
+        <div className="d-flex justify-content-center gap-2 mt-2">
+          <button type="button" className="btn btn-light border social-btn">
+            <i className="fab fa-google me-2"></i> Google
+          </button>
+          <button type="button" className="btn btn-light border social-btn">
+            <i className="fab fa-facebook-f me-2"></i> Facebook
+          </button>
         </div>
-    );
-}
+
+        <p className="text-center mt-4">
+          New user?{" "}
+          <Link to="/register" className="fw-semibold">
+            Create an account
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+};
 
 export default Login;
